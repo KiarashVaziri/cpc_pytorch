@@ -169,7 +169,7 @@ class CPC_logmel_dataset(Dataset):
             shift = int(0.01 * fs)
             
             # Extract the log-mel spectrogram
-            melspec = librosa.feature.melspectrogram(x, sr=fs, n_fft=num_fft, hop_length=shift, 
+            melspec = librosa.feature.melspectrogram(y=x, sr=fs, n_fft=num_fft, hop_length=shift, 
                                                      n_mels=40)
             
             logmel = librosa.core.power_to_db(melspec)
