@@ -15,6 +15,8 @@ from importlib.machinery import SourceFileLoader
 from copy import deepcopy
 from torch import cuda, no_grad, save, load
 from torch.utils.data import DataLoader
+import torch
+torch.autograd.set_detect_anomaly(True)
 
 from py_conf_file_into_text import convert_py_conf_file_to_text
 
@@ -27,8 +29,8 @@ if len(sys.argv) == 2:
     conf_file_name = sys.argv[1]
 else:
     try:
-        import conf_train_cpc_model as conf
-        conf_file_name = 'conf_train_cpc_model.py'
+        import conf_train_cpc_model_orig_implementation as conf
+        conf_file_name = 'conf_train_cpc_model_orig_implementation.py'
     except ModuleNotFoundError:
         sys.exit('''Usage: \n1) python train_cpc_model.py \nOR \n2) python train_cpc_model.py <configuration_file>\n\n
         By using the first option, you need to have a configuration file named "conf_train_cpc_model.py" in the same directory 

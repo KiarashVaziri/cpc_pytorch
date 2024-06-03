@@ -51,7 +51,7 @@ postnet_name = 'CPC_postnet'
 rnn_models_used_in_ar_model = 1
 
 # Define our dataset for our data loader that we want to use from the file cpc_data_loader.py
-dataset_name = 'CPC_raw_audio_dataset'
+dataset_name = 'CPC_logmel_dataset'
 
 # Define our loss function that we want to use from the file cpc_loss.py
 loss_name = 'CPC_loss_no_classes'

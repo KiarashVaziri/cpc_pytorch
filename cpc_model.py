@@ -76,7 +76,7 @@ class CPC_encoder(Module):
                                    stride=conv_5_stride, padding=conv_5_padding)
         self.batch_normalization_5 = BatchNorm1d(num_norm_features_5)
         
-        self.non_linearity_relu = ReLU()
+        self.non_linearity_relu = ReLU(inplace=False)
         self.dropout = Dropout(dropout)
 
 
