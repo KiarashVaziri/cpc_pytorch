@@ -90,7 +90,7 @@ class CPC_encoder(Module):
         X = self.dropout(self.non_linearity_relu(self.batch_normalization_2(self.conv_layer_2(X))))
         X = self.dropout(self.non_linearity_relu(self.batch_normalization_3(self.conv_layer_3(X))))
         X = self.dropout(self.non_linearity_relu(self.batch_normalization_4(self.conv_layer_4(X))))
-        X = self.dropout(self.non_linearity_relu(self.batch_normalization_5(self.conv_layer_5(X))))
+        X = self.dropout(self.batch_normalization_5(self.conv_layer_5(X)))
         # X is now of size [batch_size, conv_5_out_dim, num_frames_encoding]
         # --> with default values torch.Size([8, 512, 128])
         
