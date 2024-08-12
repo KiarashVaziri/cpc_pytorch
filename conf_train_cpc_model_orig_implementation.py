@@ -9,11 +9,11 @@ The configuration file for train_cpc_model.py using the original CPC implementat
 """
 
 # The hyperparameters for our training and testing process
-max_epochs = 10000
+max_epochs = 100
 patience = 100
 dropout = 0.0
 batch_size = 8
-learning_rate = 1e-4
+learning_rate = 2e-4
 
 # The number of frames in the encoded samples z_t
 num_frames_encoding = 128
@@ -25,7 +25,7 @@ num_frames_encoding = 128
 future_predicted_timesteps = 12
 
 # Flags for training and testing a CPC model
-train_model = 1
+train_model = 0
 test_model = 1
 
 # Flag for loading the weights for our model, i.e. flag for continuing a previous training process
@@ -51,7 +51,7 @@ postnet_name = 'CPC_postnet'
 rnn_models_used_in_ar_model = 1
 
 # Define our dataset for our data loader that we want to use from the file cpc_data_loader.py
-dataset_name = 'CPC_raw_audio_dataset'
+dataset_name = 'CPC_raw_audio_dataset_with_labels' #*
 
 # Define our loss function that we want to use from the file cpc_loss.py
 loss_name = 'CPC_loss_no_classes'
@@ -88,9 +88,10 @@ ar_model_params = {}
 w_params = {}
 
 # The hyperparameters for our data loaders
-params_train_dataset = {}
-params_validation_dataset = {}
-params_test_dataset = {}
+random_seed = 1
+params_train_dataset = {'random_seed': random_seed}
+params_validation_dataset = {'random_seed': random_seed}
+params_test_dataset = {'random_seed': random_seed}
 
 # The hyperparameters for training and validation (arguments for torch.utils.data.DataLoader object)
 params_train = {'batch_size': batch_size,
@@ -101,3 +102,7 @@ params_train = {'batch_size': batch_size,
 params_test = {'batch_size': batch_size,
                'shuffle': False,
                'drop_last': True}
+
+###########
+# Additions
+train_size = 0.8

@@ -19,7 +19,10 @@ import torch
 torch.autograd.set_detect_anomaly(True)
 
 from py_conf_file_into_text import convert_py_conf_file_to_text
-
+from utils import visualize_tsne
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 
 # Read the configuration file
 if len(sys.argv) > 2:
@@ -127,7 +130,7 @@ if __name__ == '__main__':
     
     
     # Initialize the data loaders
-    if conf.train_model:
+    if conf.train_model or conf.test_model:
         with open(conf.name_of_log_textfile, 'a') as f:
             f.write('Initializing training set...\n')
         training_set = CPC_dataset(train_val_test='train', **conf.params_train_dataset)
@@ -231,10 +234,10 @@ if __name__ == '__main__':
                     predicted_future_Z = W(c_t)
                     
                     # Compute the loss of our model
-                    if batch_labels != []:
-                        loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
-                    else:
-                        loss = loss_function(Z_future_timesteps, predicted_future_Z)
+                    # if batch_labels != []:
+                    #     loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
+                    # else:
+                    loss = loss_function(Z_future_timesteps, predicted_future_Z)
                     
                     # Add the loss to the total loss of the batch
                     loss_batch += loss
@@ -272,10 +275,10 @@ if __name__ == '__main__':
                         Z_future_timesteps = Z[:,(t + 1):(t + max_future_timestep + 1),:].permute(1, 0, 2)
                         c_t = C[:, t, :]
                         predicted_future_Z = W(c_t)
-                        if batch_labels != []:
-                            loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
-                        else:
-                            loss = loss_function(Z_future_timesteps, predicted_future_Z)
+                        # if batch_labels != []:
+                        #     loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
+                        # else:
+                        loss = loss_function(Z_future_timesteps, predicted_future_Z)
                         loss_batch += loss
                     epoch_loss_validation.append(loss_batch.item())
     
@@ -348,9 +351,17 @@ if __name__ == '__main__':
             
         # Load the best version of the model
         try:
-            Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device))
-            AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device))
-            W.load_state_dict(load(conf.w_best_model_name, map_location=device))
+            # Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device))
+            # AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device))
+            # W.load_state_dict(load(conf.w_best_model_name, map_location=device))
+            ####
+            Encoder = CPC_encoder(**conf.encoder_params)
+            AR_model = CPC_autoregressive_model(**conf.ar_model_params)
+            W = CPC_postnet(**conf.w_params)
+            Encoder = Encoder.to(device)
+            AR_model = AR_model.to(device)
+            W = W.to(device)
+            ####
         except (FileNotFoundError, RuntimeError):
             Encoder.load_state_dict(best_model_encoder)
             AR_model.load_state_dict(best_model_ar)
@@ -361,32 +372,81 @@ if __name__ == '__main__':
         AR_model.eval()
         W.eval()
         with no_grad():
-            
             if conf.rnn_models_used_in_ar_model:
                 hidden = None
             
-            for test_data in test_data_loader:
+            # Store the embeddings for visualization
+            Ztrain_embeddings = []
+            Ctrain_embeddings = []
+            train_labels = []
+            for train_data in train_data_loader:
                 loss_batch = 0.0
-                X_input, batch_labels = test_data
+                X_input, batch_labels = train_data
                 X_input = X_input.to(device)
-                Z = Encoder(X_input)
+                Z = Encoder(X_input)    #
                 if conf.rnn_models_used_in_ar_model:
                     C, hidden = AR_model(Z, hidden)
                 else:
                     C = AR_model(Z)
-                    
+                
+                Ztrain_embeddings.append(Z.mean(axis=2))  #[batch_size, num_features, num_frames_encoding]
+                Ctrain_embeddings.append(C.mean(axis=1))  #[batch_size, num_frames_encoding, num_features]
+                train_labels.append(batch_labels)    
+            
+            Ztrain_embeddings = torch.cat(Ztrain_embeddings).cpu().numpy()
+            Ctrain_embeddings = torch.cat(Ctrain_embeddings).cpu().numpy()
+            train_labels = torch.cat(train_labels).cpu().numpy()
+
+
+            # Store the embeddings for visualization
+            Ztest_embeddings = []
+            Ctest_embeddings = []
+            test_labels = []
+
+
+            for test_data in test_data_loader:
+                loss_batch = 0.0
+                X_input, batch_labels = test_data
+                X_input = X_input.to(device)
+                Z = Encoder(X_input)    #
+                if conf.rnn_models_used_in_ar_model:
+                    C, hidden = AR_model(Z, hidden)
+                else:
+                    C = AR_model(Z)
+                
+                Ztest_embeddings.append(Z.mean(axis=2))  #[batch_size, num_features, num_frames_encoding]
+                Ctest_embeddings.append(C.mean(axis=1))  #[batch_size, num_frames_encoding, num_features]
+                test_labels.append(batch_labels)    
+
                 for t in timesteps:
                     Z_future_timesteps = Z[:,(t + 1):(t + max_future_timestep + 1),:].permute(1, 0, 2)
                     c_t = C[:, t, :]
                     predicted_future_Z = W(c_t)
-                    if batch_labels != []:
-                        loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
-                    else:
-                        loss = loss_function(Z_future_timesteps, predicted_future_Z)
+                    # if batch_labels != []:
+                    #     loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
+                    # else:
+                    loss = loss_function(Z_future_timesteps, predicted_future_Z)
                     loss_batch += loss
                 testing_loss.append(loss_batch.item())
 
             testing_loss = np.array(testing_loss).mean()
             with open(conf.name_of_log_textfile, 'a') as f:
-                f.write(f'Testing loss: {testing_loss:7.4f}')
-    
+                f.write(f'Testing loss: {testing_loss:7.4f}\n')
+            
+            # Concatenate the embeddings
+            Ztest_embeddings = torch.cat(Ztest_embeddings).cpu().numpy()
+            Ctest_embeddings = torch.cat(Ctest_embeddings).cpu().numpy()
+            test_labels = torch.cat(test_labels).cpu().numpy()
+
+            # Classify speakers
+            clf = LogisticRegression(penalty='l2')
+            clf.fit(Ctrain_embeddings, train_labels)
+            predicted_labels = clf.predict(Ctest_embeddings)
+            test_acc = accuracy_score(test_labels, predicted_labels)
+            
+            with open(conf.name_of_log_textfile, 'a') as f:
+                f.write(f'[seed: {conf.random_seed}] testing accuracy : {test_acc:7.4f}\n')
+
+            # fig, ax1, ax2 = visualize_tsne(x= Ctest_embeddings, y_label=test_labels, perplexity=10, title_str=f'speaker classification: {test_acc:.4f}\n')
+            # fig.savefig(f'./figs/tsne visualization - seed[{conf.random_seed}].png')
+
