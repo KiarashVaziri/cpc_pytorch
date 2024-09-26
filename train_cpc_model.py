@@ -351,16 +351,16 @@ if __name__ == '__main__':
             
         # Load the best version of the model
         try:
-            Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device))
-            AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device))
-            W.load_state_dict(load(conf.w_best_model_name, map_location=device))
+            #Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device))
+            #AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device))
+            #W.load_state_dict(load(conf.w_best_model_name, map_location=device))
             ####
-            # Encoder = CPC_encoder(**conf.encoder_params)
-            # AR_model = CPC_autoregressive_model(**conf.ar_model_params)
-            # W = CPC_postnet(**conf.w_params)
-            # Encoder = Encoder.to(device)
-            # AR_model = AR_model.to(device)
-            # W = W.to(device)
+            Encoder = CPC_encoder(**conf.encoder_params)
+            AR_model = CPC_autoregressive_model(**conf.ar_model_params)
+            W = CPC_postnet(**conf.w_params)
+            Encoder = Encoder.to(device)
+            AR_model = AR_model.to(device)
+            W = W.to(device)
             ####
         except (FileNotFoundError, RuntimeError):
             Encoder.load_state_dict(best_model_encoder)
