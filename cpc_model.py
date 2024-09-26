@@ -197,7 +197,6 @@ class CPC_autoregressive_model(Module):
     
     
 
-
 class CPC_postnet(Module):
     """
     The CPC post-net (a linear transformation) from the original CPC paper. Alternatively, as
