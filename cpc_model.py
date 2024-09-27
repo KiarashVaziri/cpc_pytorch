@@ -11,8 +11,7 @@ import numpy as np
 import sys
 from torch import stack
 from torch.nn import Module, Linear, ReLU, Conv1d, BatchNorm1d, Dropout, GRU, ModuleList, ELU, Identity
-
-
+from encoding_models.LDM import LDM, init_ldm_parameters
 
 
 class CPC_encoder(Module):
@@ -169,33 +168,87 @@ class CPC_autoregressive_model(Module):
     
     """
     
-    def __init__(self, encoding_dim = 512, output_dim = 256, num_layers = 1):
+    def __init__(self, encoding_dim = 256,
+                 output_dim = 512,
+                 num_layers = 1,
+                 type='gru',
+                 ldm_kernel_initializer = 'default',
+                 nn_kernel_initializer = 'xavier_normal',
+                 init_A_scale = 1,
+                 init_C_scale = 1,
+                 init_W_scale = 0.5,
+                 init_R_scale = 0.5,
+                 init_cov = 1,
+                 is_W_trainable = True,
+                 is_R_trainable = True,
+                 latent_factor = 'filtered'):
 
         super().__init__()
         
-        self.cpc_ar = GRU(input_size=encoding_dim, hidden_size=output_dim, num_layers=num_layers, batch_first=True, bidirectional=False)
+        if type == 'gru':
+            self.type = 'gru'
+            self.cpc_ar = GRU(input_size=encoding_dim, hidden_size=output_dim, num_layers=num_layers, batch_first=True, bidirectional=False)
+        elif type == 'ldm': 
+            self.type = 'ldm'   
+            A, C, W_log_diag, R_log_diag, mu_0, Lambda_0 = init_ldm_parameters(encoding_dim=encoding_dim,
+                                                                               output_dim=output_dim,
+                                                                               ldm_kernel_initializer=ldm_kernel_initializer,
+                                                                               nn_kernel_initializer=nn_kernel_initializer,
+                                                                               init_A_scale=init_A_scale,
+                                                                               init_C_scale=init_C_scale,
+                                                                               init_W_scale=init_W_scale,
+                                                                               init_R_scale=init_R_scale,
+                                                                               init_cov=init_cov)
+            self.cpc_ar = LDM(dim_x=encoding_dim, 
+                              dim_a=output_dim, 
+                              A=A, 
+                              C=C, 
+                              W_log_diag=W_log_diag,
+                              R_log_diag=R_log_diag,
+                              mu_0=mu_0, Lambda_0=Lambda_0,
+                              is_W_trainable=is_W_trainable,
+                              is_R_trainable=is_R_trainable)
+            self.latent_factor = latent_factor
 
-
-    def forward(self, X, hidden):
-        
+    def forward(self, X, hidden=None):
         # For the GRU, we want to reshape the data from the form [batch_size, num_features, num_frames_encoding] into
         # [batch_size, num_frames_encoding, num_features] where num_features is the size of the encoding for each
         # timestep produced by the encoder
         # --> with default values from torch.Size([8, 512, 128]) into torch.Size([8, 128, 512])
         X.transpose_(1, 2)
         
-        if hidden == None:
-            X, hidden = self.cpc_ar(X)
-        else:
+        if self.type == 'gru':
             X, hidden = self.cpc_ar(X, hidden)
+        if self.type == 'ldm':
+            do_smoothing = True if self.latent_factor == 'smoothed' else False
+            mu_pred_all, mu_t_all, mu_backw_all, _, _, _ = self.cpc_ar(X, do_smoothing=do_smoothing)
+            if self.latent_factor == 'filtered':
+                X = mu_t_all
+            elif self.latent_factor == 'smoothed':
+                X = mu_backw_all
+            else:
+                X = mu_pred_all
         # X and hidden are now of size [batch_size, num_frames_encoding, output_dim] and [D * num_layers, batch_size, output_dim], respectively
         # (D = 2 if bidirectional=True, D = 1 otherwise)
         # --> with default values X.size() = torch.Size([8, 128, 256]) and hidden.size() = torch.Size([1, 8, 256])
         
-        # We detach the hidden vector from the graph
-        return X, hidden.detach()
-    
-    
+        return X     
+
+    def get_k_step_postnet(self, k):
+        if self.type == 'ldm':
+            W_k = self.cpc_ar.get_k_step_postnet(k)
+        else:
+            raise ValueError(f"Invalid type: {self.type}. Expected 'ldm'.")
+        
+        return W_k
+
+    def get_postnet_weight_matrices(self, future_predicted_timesteps):
+        if isinstance(future_predicted_timesteps, int):
+            weight_matrices = [self.get_k_step_postnet(k) for k in np.arange(future_predicted_timesteps)]
+        elif isinstance(future_predicted_timesteps, list):
+            weight_matrices = [self.get_k_step_postnet(k) for k in future_predicted_timesteps]
+        return weight_matrices
+
 
 class CPC_postnet(Module):
     """
@@ -233,4 +286,3 @@ class CPC_postnet(Module):
         # --> with default values predicted_future_Z.size() = torch.Size([12, 8, 512])
                 
         return predicted_future_Z
-

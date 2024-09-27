@@ -19,7 +19,7 @@ import torch
 torch.autograd.set_detect_anomaly(True)
 
 from py_conf_file_into_text import convert_py_conf_file_to_text
-from utils import visualize_tsne
+# from utils import visualize_tsne
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
@@ -32,8 +32,10 @@ if len(sys.argv) == 2:
     conf_file_name = sys.argv[1]
 else:
     try:
-        import conf_train_cpc_model_orig_implementation as conf
-        conf_file_name = 'conf_train_cpc_model_orig_implementation.py'
+        # import conf_train_cpc_model_orig_implementation as conf
+        # conf_file_name = 'conf_train_cpc_model_orig_implementation.py'
+        import conf_train_ldmcpc_model as conf
+        conf_file_name = 'conf_train_ldmcpc_model.py'
     except ModuleNotFoundError:
         sys.exit('''Usage: \n1) python train_cpc_model.py \nOR \n2) python train_cpc_model.py <configuration_file>\n\n
         By using the first option, you need to have a configuration file named "conf_train_cpc_model.py" in the same directory 
@@ -199,7 +201,6 @@ if __name__ == '__main__':
             
             # Loop through every batch of our training data
             for train_data in train_data_loader:
-                
                 # The loss of the batch
                 loss_batch = 0.0
                 
@@ -250,7 +251,6 @@ if __name__ == '__main__':
 
                 # Add the loss to the total loss of the batch
                 epoch_loss_training.append(loss_batch.item())
-    
     
             # Indicate that we are in evaluation mode, so e.g. dropout will not function
             Encoder.eval()

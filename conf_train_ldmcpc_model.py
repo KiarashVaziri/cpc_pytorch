@@ -9,7 +9,7 @@ The configuration file for train_cpc_model.py using the original CPC implementat
 """
 
 # The hyperparameters for our training and testing process
-max_epochs = 10
+max_epochs = 1000
 patience = 100
 dropout = 0.0
 batch_size = 8
@@ -48,7 +48,7 @@ autoregressive_model_name = 'CPC_autoregressive_model'
 postnet_name = 'CPC_postnet'
 
 # A flag for defining if we are using RNNs in our AR model (i.e., do we need a hidden vector)
-rnn_models_used_in_ar_model = 1
+rnn_models_used_in_ar_model = 0
 
 # Define our dataset for our data loader that we want to use from the file cpc_data_loader.py
 dataset_name = 'CPC_raw_audio_dataset_with_labels' #*
@@ -84,7 +84,7 @@ w_best_model_name = 'W_best_model.pt'
 # The hyperparameters for constructing the models. An empty dictionary will make the model to use
 # only default hyperparameters, i.e., the hyperparameters of the original CPC paper
 encoder_params = {'dropout': dropout}
-ar_model_params = {}
+ar_model_params = {'type':'ldm'}
 w_params = {}
 
 # The hyperparameters for our data loaders
