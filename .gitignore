@@ -1,2 +1,7 @@
+__pycache__/
 wav_files/
 *.DS_Store
+*.wav
+
+# models
+*.pt
