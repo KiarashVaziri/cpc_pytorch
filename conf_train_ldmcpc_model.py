@@ -9,8 +9,8 @@ The configuration file for train_cpc_model.py using the original CPC implementat
 """
 
 # The hyperparameters for our training and testing process
-max_epochs = 10
-patience = 100
+max_epochs = 100
+patience = 20
 dropout = 0.0
 batch_size = 8
 learning_rate = 2e-4
@@ -29,7 +29,10 @@ train_model = 1
 test_model = 1
 
 # Flag for loading the weights for our model, i.e. flag for continuing a previous training process
-load_model = 1
+load_model = 0
+
+# Randomly initialize the model component for test 
+rand_init = 0
 
 # Flag for saving the best model (according to validation loss) after each training epoch where the
 # validation loss is lower than before

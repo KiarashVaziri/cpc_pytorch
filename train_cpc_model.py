@@ -356,22 +356,20 @@ if __name__ == '__main__':
             f.write('\n\nStarting testing... => ')
             
         # Load the best version of the model
-        try:
-            Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device))
-            AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device))
-            W.load_state_dict(load(conf.w_best_model_name, map_location=device))
-            ####
-            # Encoder = CPC_encoder(**conf.encoder_params)
-            # AR_model = CPC_autoregressive_model(**conf.ar_model_params)
-            # W = CPC_postnet(**conf.w_params)
-            # Encoder = Encoder.to(device)
-            # AR_model = AR_model.to(device)
-            # W = W.to(device)
-            ####
-        except (FileNotFoundError, RuntimeError):
-            Encoder.load_state_dict(best_model_encoder)
-            AR_model.load_state_dict(best_model_ar)
-            W.load_state_dict(best_model_w)
+        if not conf.rand_init:    
+            try:
+                Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device), weights_only=True)
+                AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device), weights_only=True)
+                W.load_state_dict(load(conf.w_best_model_name, map_location=device), weights_only=True)
+            except (FileNotFoundError, RuntimeError):
+                Encoder.load_state_dict(best_model_encoder)
+                AR_model.load_state_dict(best_model_ar)
+                W.load_state_dict(best_model_w)
+        # Randomly initialize the model components
+        else:
+            Encoder = CPC_encoder(**conf.encoder_params).to(device)
+            AR_model = CPC_autoregressive_model(**conf.ar_model_params).to(device)
+            W = CPC_postnet(**conf.w_params).to(device)
                 
         testing_loss = []
         Encoder.eval()
@@ -381,7 +379,7 @@ if __name__ == '__main__':
             if conf.rnn_models_used_in_ar_model:
                 hidden = None
             
-            # Store the embeddings for visualization
+            # Store the training embeddings
             Ztrain_embeddings = []
             Ctrain_embeddings = []
             train_labels = []
@@ -403,13 +401,10 @@ if __name__ == '__main__':
             Ctrain_embeddings = torch.cat(Ctrain_embeddings).cpu().numpy()
             train_labels = torch.cat(train_labels).cpu().numpy()
 
-
-            # Generate the embeddings
+            # Store the test embeddings
             Ztest_embeddings = []
             Ctest_embeddings = []
             test_labels = []
-
-
             for test_data in test_data_loader:
                 loss_batch = 0.0
                 X_input, batch_labels = test_data
@@ -437,7 +432,7 @@ if __name__ == '__main__':
 
             testing_loss = np.array(testing_loss).mean()
             with open(conf.name_of_log_textfile, 'a') as f:
-                f.write(f'Testing loss: {testing_loss:7.4f}\n')
+                f.write(f'Testing loss: {testing_loss:7.4f}\n\n')
             
             # Concatenate the embeddings
             Ztest_embeddings = torch.cat(Ztest_embeddings).cpu().numpy()
@@ -447,11 +442,14 @@ if __name__ == '__main__':
             # Classify speakers
             clf = LogisticRegression(penalty='l2')
             clf.fit(Ctrain_embeddings, train_labels)
-            predicted_labels = clf.predict(Ctest_embeddings)
-            test_acc = accuracy_score(test_labels, predicted_labels)
+            train_labels_predicted = clf.predict(Ctrain_embeddings)
+            test_labels_predicted = clf.predict(Ctest_embeddings)
+            train_acc = accuracy_score(train_labels, train_labels_predicted)
+            test_acc = accuracy_score(test_labels, test_labels_predicted)
             
             with open(conf.name_of_log_textfile, 'a') as f:
-                f.write(f'[seed: {conf.random_seed}] testing accuracy : {test_acc:7.4f}\n')
+                f.write(f'Speaker classification results [seed: {conf.random_seed}]\n')
+                f.write(f'train acc: {100*train_acc:3.4f}%, testing acc : {100*test_acc:3.4f}%\n')
 
             # fig, ax1, ax2 = visualize_tsne(x= Ctest_embeddings, y_label=test_labels, perplexity=10, title_str=f'speaker classification: {test_acc:.4f}\n')
             # fig.savefig(f'./figs/tsne visualization - seed[{conf.random_seed}].png')
