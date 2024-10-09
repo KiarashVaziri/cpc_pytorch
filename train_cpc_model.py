@@ -16,7 +16,7 @@ from copy import deepcopy
 from torch import cuda, no_grad, save, load
 from torch.utils.data import DataLoader
 import torch
-torch.autograd.set_detect_anomaly(True)
+from tqdm import tqdm 
 
 from py_conf_file_into_text import convert_py_conf_file_to_text
 # from utils import visualize_tsne
@@ -117,9 +117,9 @@ if __name__ == '__main__':
             f.write(f'Loading model {conf.encoder_best_model_name}\n')
             f.write(f'Loading model {conf.ar_best_model_name}\n')
             f.write(f'Loading model {conf.w_best_model_name}\n')
-        Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device))
-        AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device))
-        W.load_state_dict(load(conf.w_best_model_name, map_location=device))
+        Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device, weights_only=True))
+        AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device, weights_only=True))
+        W.load_state_dict(load(conf.w_best_model_name, map_location=device, weights_only=True))
         best_model_encoder = deepcopy(Encoder.state_dict())
         best_model_ar = deepcopy(AR_model.state_dict())
         best_model_w = deepcopy(W.state_dict())
@@ -199,59 +199,62 @@ if __name__ == '__main__':
                 # Initialize the RNN's hidden vector
                 hidden = None
             
-            # Loop through every batch of our training data
-            for train_data in train_data_loader:
-                # The loss of the batch
-                loss_batch = 0.0
-                
-                # Get the batches
-                X_input, batch_labels = train_data
-                X_input = X_input.to(device)
-                
-                # Zero the gradient of the optimizer
-                optimizer.zero_grad()
-                
-                # Pass our data through the encoder
-                Z = Encoder(X_input)
-                
-                # Create the output of the AR model. Note that the default AR_model flips the dimensions of Z from the
-                # form [batch_size, num_features, num_frames_encoding] into [batch_size, num_frames_encoding, num_features])
-                if conf.rnn_models_used_in_ar_model:
-                    C, hidden = AR_model(Z, hidden)
-                else:
-                    C = AR_model(Z)
-                
-                # We go through each timestep one at a time
-                for t in timesteps:
-                    
-                    # The encodings of the future timesteps, i.e. z_{t+k} where k in [1, 2, ..., max_future_timestep]
-                    Z_future_timesteps = Z[:,(t + 1):(t + max_future_timestep + 1),:].permute(1, 0, 2)
-                    
-                    # c_t is the context latent representation that summarizes all encoder embeddings z_k where k <= t
-                    c_t = C[:, t, :]
-                    
-                    # Each of the predicted future embeddings z_{t+k} where k in [1, 2, ..., max_future_timestep] (or k in
-                    # future_predicted_timesteps if future_predicted_timesteps is a list) are computed using the post-net
-                    predicted_future_Z = W(c_t)
-                    
-                    # Compute the loss of our model
-                    # if batch_labels != []:
-                    #     loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
-                    # else:
-                    loss = loss_function(Z_future_timesteps, predicted_future_Z)
-                    
-                    # Add the loss to the total loss of the batch
-                    loss_batch += loss
-                    
-                # Perform the backward pass
-                loss_batch.backward()
-                
-                # Update the weights
-                optimizer.step()
+            # Open the log file for writing
+            log_file = open('training_log.txt', "w")
 
-                # Add the loss to the total loss of the batch
-                epoch_loss_training.append(loss_batch.item())
-    
+            # Loop through every batch of our training data
+            for train_data in tqdm(train_data_loader, desc=f"Epoch {epoch}/{conf.max_epochs}, training: ", unit="batch", file=log_file):
+                    # The loss of the batch
+                    loss_batch = 0.0
+                    
+                    # Get the batches
+                    X_input, batch_labels = train_data
+                    X_input = X_input.to(device)
+                    
+                    # Zero the gradient of the optimizer
+                    optimizer.zero_grad()
+                    
+                    # Pass our data through the encoder
+                    Z = Encoder(X_input)
+                    
+                    # Create the output of the AR model. Note that the default AR_model flips the dimensions of Z from the
+                    # form [batch_size, num_features, num_frames_encoding] into [batch_size, num_frames_encoding, num_features])
+                    if conf.rnn_models_used_in_ar_model:
+                        C, hidden = AR_model(Z, hidden)
+                    else:
+                        C = AR_model(Z)
+                    
+                    # We go through each timestep one at a time
+                    for t in timesteps:
+                        
+                        # The encodings of the future timesteps, i.e. z_{t+k} where k in [1, 2, ..., max_future_timestep]
+                        Z_future_timesteps = Z[:,(t + 1):(t + max_future_timestep + 1),:].permute(1, 0, 2)
+                        
+                        # c_t is the context latent representation that summarizes all encoder embeddings z_k where k <= t
+                        c_t = C[:, t, :]
+                        
+                        # Each of the predicted future embeddings z_{t+k} where k in [1, 2, ..., max_future_timestep] (or k in
+                        # future_predicted_timesteps if future_predicted_timesteps is a list) are computed using the post-net
+                        predicted_future_Z = W(c_t)
+                        
+                        # Compute the loss of our model
+                        # if batch_labels != []:
+                        #     loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
+                        # else:
+                        loss = loss_function(Z_future_timesteps, predicted_future_Z)
+                        
+                        # Add the loss to the total loss of the batch
+                        loss_batch += loss
+                        
+                    # Perform the backward pass
+                    loss_batch.backward()
+                    
+                    # Update the weights
+                    optimizer.step()
+
+                    # Add the loss to the total loss of the batch
+                    epoch_loss_training.append(loss_batch.item())
+
             # Indicate that we are in evaluation mode, so e.g. dropout will not function
             Encoder.eval()
             AR_model.eval()
@@ -261,7 +264,7 @@ if __name__ == '__main__':
             with no_grad():
                 
                 # Loop through every batch of our validation data and perform a similar process as for the training data
-                for validation_data in validation_data_loader:
+                for validation_data in tqdm(validation_data_loader, desc=f"Epoch {epoch}/{conf.max_epochs}, validation: ", unit="batch", file=log_file):
                     loss_batch = 0.0
                     X_input, batch_labels = validation_data
                     X_input = X_input.to(device)
@@ -281,7 +284,10 @@ if __name__ == '__main__':
                         loss = loss_function(Z_future_timesteps, predicted_future_Z)
                         loss_batch += loss
                     epoch_loss_validation.append(loss_batch.item())
-    
+            
+            
+            log_file.close()
+
             # Calculate mean losses
             epoch_loss_training = np.array(epoch_loss_training).mean()
             epoch_loss_validation = np.array(epoch_loss_validation).mean()
@@ -351,16 +357,16 @@ if __name__ == '__main__':
             
         # Load the best version of the model
         try:
-            #Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device))
-            #AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device))
-            #W.load_state_dict(load(conf.w_best_model_name, map_location=device))
+            Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device))
+            AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device))
+            W.load_state_dict(load(conf.w_best_model_name, map_location=device))
             ####
-            Encoder = CPC_encoder(**conf.encoder_params)
-            AR_model = CPC_autoregressive_model(**conf.ar_model_params)
-            W = CPC_postnet(**conf.w_params)
-            Encoder = Encoder.to(device)
-            AR_model = AR_model.to(device)
-            W = W.to(device)
+            # Encoder = CPC_encoder(**conf.encoder_params)
+            # AR_model = CPC_autoregressive_model(**conf.ar_model_params)
+            # W = CPC_postnet(**conf.w_params)
+            # Encoder = Encoder.to(device)
+            # AR_model = AR_model.to(device)
+            # W = W.to(device)
             ####
         except (FileNotFoundError, RuntimeError):
             Encoder.load_state_dict(best_model_encoder)
@@ -398,7 +404,7 @@ if __name__ == '__main__':
             train_labels = torch.cat(train_labels).cpu().numpy()
 
 
-            # Store the embeddings for visualization
+            # Generate the embeddings
             Ztest_embeddings = []
             Ctest_embeddings = []
             test_labels = []
