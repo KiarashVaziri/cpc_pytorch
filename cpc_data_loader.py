@@ -12,7 +12,9 @@ from torch import from_numpy
 from torch.utils.data import Dataset
 import os
 import sys
+import random
 import librosa
+import torchaudio
 
 
      
@@ -139,7 +141,7 @@ class CPC_raw_audio_dataset_with_labels(Dataset):
     """
 
     def __init__(self, train_val_test='train', file_dir='./wav_files', audio_window_length=20480, Fs=16000,
-                 train_test_ratio=0.8, train_val_ratio=0.75, random_seed=22):
+                 train_test_ratio=0.9, train_val_ratio=0.9, random_seed=22):
         super().__init__()
         
         self.audio_window_length = audio_window_length
@@ -207,8 +209,94 @@ class CPC_raw_audio_dataset_with_labels(Dataset):
         return from_numpy(self.feats[index][part_index:(part_index + self.audio_window_length)]), self.labels[index]
 
 
+class CPCDataset(Dataset):
+    """
+    A raw audio dataset for a CPC model, loading files from the LibriSpeech folder and performing splits
+    between train, validation, and test based on filenames.
+    _____________________________________________________________________________________________
+    """
 
+    def __init__(self, train_val_test='train', file_dir='./LibriSpeech/train-clean-100', 
+                 audio_window_length=20480, Fs=16000, train_test_ratio=0.9, train_val_ratio=0.9, 
+                 random_seed=42, num_speakers=None):
+        super().__init__()
+        
+        self.audio_window_length = audio_window_length
+        self.file_dir = file_dir
+        self.Fs = Fs
+        self.num_speakers = num_speakers
+        
+        # Initialize random seed for reproducibility
+        np.random.seed(random_seed)
+        random.seed(random_seed)
 
+        # Traverse the directory structure and collect file paths
+        self.file_paths = []
+        self.speaker_ids = []
+        
+        for root, dirs, files in os.walk(file_dir):
+            for file in files:
+                if file.endswith('.flac'):  # Assuming LibriSpeech files are .flac
+                    speaker_id, chapter_id, utterance_id = file.split('-')[:3]
+                    file_path = os.path.join(root, file)
+                    self.file_paths.append(file_path)
+                    self.speaker_ids.append(speaker_id)
+
+        # Convert speaker IDs to labels
+        unique_speakers, labels = np.unique(self.speaker_ids, return_inverse=True)
+
+        # Filter to select only `num_speakers` if provided
+        if self.num_speakers is not None:
+            if self.num_speakers > len(unique_speakers):
+                raise ValueError(f"Requested {self.num_speakers} speakers, but only {len(unique_speakers)} are available.")
+            
+            # Randomly select `num_speakers` speakers
+            selected_speakers = np.random.choice(unique_speakers, self.num_speakers, replace=False)
+            
+            # Filter file paths and labels based on selected speakers
+            selected_indices = [i for i, speaker_id in enumerate(self.speaker_ids) if speaker_id in selected_speakers]
+            self.file_paths = [self.file_paths[i] for i in selected_indices]
+            self.labels = [labels[i] for i in selected_indices]
+        else:
+            self.labels = labels  # Use all speakers if no limit is set
+        
+        # Split file paths into train, validation, and test sets
+        num_files = len(self.file_paths)
+        indices = np.arange(num_files)
+        np.random.shuffle(indices)
+
+        train_test_split = int(train_test_ratio * num_files)
+        train_val_split = int(train_val_ratio * train_test_split)
+        
+        if train_val_test == 'train':
+            self.file_paths = [self.file_paths[i] for i in indices[:train_val_split]]
+            self.labels = [self.labels[i] for i in indices[:train_val_split]]
+        elif train_val_test == 'validation':
+            self.file_paths = [self.file_paths[i] for i in indices[train_val_split:train_test_split]]
+            self.labels = [self.labels[i] for i in indices[train_val_split:train_test_split]]
+        else:
+            self.file_paths = [self.file_paths[i] for i in indices[train_test_split:]]
+            self.labels = [self.labels[i] for i in indices[train_test_split:]]
+        
+    def __len__(self) -> int:
+        return len(self.file_paths)
+
+    def __getitem__(self, index):
+        # Load the audio file at the given index
+        file_path = self.file_paths[index]
+        waveform, sample_rate = torchaudio.load(file_path)
+        # Resample the audio if necessary
+        if sample_rate != self.Fs:
+            waveform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=self.Fs)(waveform)
+
+        # Select a random window from the audio file
+        if waveform.size(1) > self.audio_window_length:
+            start = np.random.randint(0, waveform.size(1) - self.audio_window_length)
+            waveform = waveform[:, start:start + self.audio_window_length]
+        
+        waveform = waveform.squeeze(0)
+
+        return waveform, self.labels[index]
 
 
 

@@ -10,16 +10,17 @@ Code for training and evaluating a CPC model.
 import numpy as np
 import time
 import sys
+import os
 
 from importlib.machinery import SourceFileLoader
 from copy import deepcopy
 from torch import cuda, no_grad, save, load
 from torch.utils.data import DataLoader
 import torch
-torch.autograd.set_detect_anomaly(True)
+from tqdm import tqdm 
 
-from py_conf_file_into_text import convert_py_conf_file_to_text
-from utils import visualize_tsne
+from utils import convert_py_conf_file_to_text
+# from utils import visualize_tsne
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
@@ -32,8 +33,10 @@ if len(sys.argv) == 2:
     conf_file_name = sys.argv[1]
 else:
     try:
-        import conf_train_cpc_model_orig_implementation as conf
-        conf_file_name = 'conf_train_cpc_model_orig_implementation.py'
+        # import conf_train_cpc_model_orig_implementation as conf
+        # conf_file_name = 'conf_train_cpc_model_orig_implementation.py'
+        from confs import conf_train_ldmcpc_model as conf
+        conf_file_name = 'confs/conf_train_ldmcpc_model.py'
     except ModuleNotFoundError:
         sys.exit('''Usage: \n1) python train_cpc_model.py \nOR \n2) python train_cpc_model.py <configuration_file>\n\n
         By using the first option, you need to have a configuration file named "conf_train_cpc_model.py" in the same directory 
@@ -61,7 +64,8 @@ if conf.use_lr_scheduler:
 
 
 if __name__ == '__main__':
-    
+
+    # Open the file for writing
     file = open(conf.name_of_log_textfile, 'w')
     file.close()
     
@@ -90,6 +94,17 @@ if __name__ == '__main__':
     AR_model = AR_model.to(device)
     W = W.to(device)
     
+    enconder_num_params = sum(p.numel() for p in Encoder.parameters() if p.requires_grad)
+    ar_num_params = sum(p.numel() for p in AR_model.parameters() if p.requires_grad)
+    w_num_params = sum(p.numel() for p in W.parameters() if p.requires_grad)
+    total_num_params = enconder_num_params + ar_num_params + w_num_params
+    with open(conf.name_of_log_textfile, 'a') as f:
+        f.write(f"Number of parameters:\n")
+        f.write(f"Encoder #params:  {enconder_num_params:7d} (%{100*enconder_num_params/total_num_params:3.1f})\n")
+        f.write(f"AR #params:       {ar_num_params:7d} (%{100*ar_num_params/total_num_params:3.1f})\n")
+        f.write(f"W #params:        {w_num_params:7d} (%{100*w_num_params/total_num_params:3.1f})\n")
+        f.write(f"Total #params: {total_num_params:7d}\n\n")
+
     # Give the parameters of our models to an optimizer
     model_parameters = list(Encoder.parameters()) + list(AR_model.parameters()) + list(W.parameters())
     optimizer = optimization_algorithm(params=model_parameters, **conf.optimization_algorithm_params)
@@ -115,9 +130,9 @@ if __name__ == '__main__':
             f.write(f'Loading model {conf.encoder_best_model_name}\n')
             f.write(f'Loading model {conf.ar_best_model_name}\n')
             f.write(f'Loading model {conf.w_best_model_name}\n')
-        Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device))
-        AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device))
-        W.load_state_dict(load(conf.w_best_model_name, map_location=device))
+        Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device, weights_only=True))
+        AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device, weights_only=True))
+        W.load_state_dict(load(conf.w_best_model_name, map_location=device, weights_only=True))
         best_model_encoder = deepcopy(Encoder.state_dict())
         best_model_ar = deepcopy(AR_model.state_dict())
         best_model_w = deepcopy(W.state_dict())
@@ -175,6 +190,12 @@ if __name__ == '__main__':
     # Flag for indicating if max epochs are reached
     max_epochs_reached = 1
     
+    # Record the metrics over epochs
+    metrics = {'epoch_loss_training':[],
+               'epoch_loss_validation':[],
+               'epoch_acc_training':[],
+               'epoch_acc_validation':[]}
+    
     # Start training our model
     if conf.train_model:
         with open(conf.name_of_log_textfile, 'a') as f:
@@ -197,71 +218,99 @@ if __name__ == '__main__':
                 # Initialize the RNN's hidden vector
                 hidden = None
             
-            # Loop through every batch of our training data
-            for train_data in train_data_loader:
-                
-                # The loss of the batch
-                loss_batch = 0.0
-                
-                # Get the batches
-                X_input, batch_labels = train_data
-                X_input = X_input.to(device)
-                
-                # Zero the gradient of the optimizer
-                optimizer.zero_grad()
-                
-                # Pass our data through the encoder
-                Z = Encoder(X_input)
-                
-                # Create the output of the AR model. Note that the default AR_model flips the dimensions of Z from the
-                # form [batch_size, num_features, num_frames_encoding] into [batch_size, num_frames_encoding, num_features])
-                if conf.rnn_models_used_in_ar_model:
-                    C, hidden = AR_model(Z, hidden)
-                else:
-                    C = AR_model(Z)
-                
-                # We go through each timestep one at a time
-                for t in timesteps:
-                    
-                    # The encodings of the future timesteps, i.e. z_{t+k} where k in [1, 2, ..., max_future_timestep]
-                    Z_future_timesteps = Z[:,(t + 1):(t + max_future_timestep + 1),:].permute(1, 0, 2)
-                    
-                    # c_t is the context latent representation that summarizes all encoder embeddings z_k where k <= t
-                    c_t = C[:, t, :]
-                    
-                    # Each of the predicted future embeddings z_{t+k} where k in [1, 2, ..., max_future_timestep] (or k in
-                    # future_predicted_timesteps if future_predicted_timesteps is a list) are computed using the post-net
-                    predicted_future_Z = W(c_t)
-                    
-                    # Compute the loss of our model
-                    # if batch_labels != []:
-                    #     loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
-                    # else:
-                    loss = loss_function(Z_future_timesteps, predicted_future_Z)
-                    
-                    # Add the loss to the total loss of the batch
-                    loss_batch += loss
-                    
-                # Perform the backward pass
-                loss_batch.backward()
-                
-                # Update the weights
-                optimizer.step()
+            # Open the log file for writing
+            log_file = open('training_log.txt', "w")
 
-                # Add the loss to the total loss of the batch
-                epoch_loss_training.append(loss_batch.item())
-    
-    
+            # Store the features/embeddings
+            Z_feats_training = []
+            C_feats_training = []
+            train_labels = []
+
+            # Loop through every batch of our training data
+            for train_data in tqdm(train_data_loader, desc=f"Epoch {epoch}/{conf.max_epochs}, training: ", unit="batch", file=log_file):
+                    # The loss of the batch
+                    loss_batch = 0.0
+                    
+                    # Get the batches
+                    X_input, batch_labels = train_data
+                    X_input = X_input.to(device)
+                    
+                    # Zero the gradient of the optimizer
+                    optimizer.zero_grad()
+                    
+                    # Pass our data through the encoder
+                    Z = Encoder(X_input)
+                    
+                    # Create the output of the AR model. Note that the default AR_model flips the dimensions of Z from the
+                    # form [batch_size, num_features, num_frames_encoding] into [batch_size, num_frames_encoding, num_features])
+                    if conf.rnn_models_used_in_ar_model:
+                        C, hidden = AR_model(Z, hidden)
+                    else:
+                        C = AR_model(Z)
+                    
+                    # We go through each timestep one at a time
+                    for t in timesteps:
+                        
+                        # The encodings of the future timesteps, i.e. z_{t+k} where k in [1, 2, ..., max_future_timestep]
+                        Z_future_timesteps = Z[:,(t + 1):(t + max_future_timestep + 1),:].permute(1, 0, 2)
+                        
+                        # c_t is the context latent representation that summarizes all encoder embeddings z_k where k <= t
+                        c_t = C[:, t, :]
+                        
+                        # Each of the predicted future embeddings z_{t+k} where k in [1, 2, ..., max_future_timestep] (or k in
+                        # future_predicted_timesteps if future_predicted_timesteps is a list) are computed using the post-net
+                        if conf.w_use_ldm_params:
+                            # Get the k-step ahead weights calculated based on LDM parameters; W_k = C.A^K
+                            weight_matrices = AR_model.get_postnet_weight_matrices(conf.future_predicted_timesteps)
+                            # W.set_weights(weight_matrices)
+                            predicted_future_Z = W(c_t, weight_matrices)
+                        else:
+                            predicted_future_Z = W(c_t)
+                        # predicted_future_Z = W(c_t)
+                        
+                        # Compute the loss of our model
+                        # if batch_labels != []:
+                        #     loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
+                        # else:
+                        loss = loss_function(Z_future_timesteps, predicted_future_Z)
+                        
+                        # Add the loss to the total loss of the batch
+                        loss_batch += loss
+                        
+                    # Perform the backward pass
+                    loss_batch.backward()
+                    
+                    # Update the weights
+                    optimizer.step()
+
+                    # Add the loss to the total loss of the batch
+                    epoch_loss_training.append(loss_batch.item())
+
+
+                    # Save the features
+                    Z_feats_training.append(Z.mean(axis=2))  #[batch_size, num_features, num_frames_encoding]
+                    C_feats_training.append(C.mean(axis=1))  #[batch_size, num_frames_encoding, num_features]
+                    train_labels.append(batch_labels)    
+                
+            Z_feats_training = torch.cat(Z_feats_training).detach().cpu().numpy()
+            C_feats_training = torch.cat(C_feats_training).detach().cpu().numpy()
+            train_labels = torch.cat(train_labels).detach().cpu().numpy()
+
             # Indicate that we are in evaluation mode, so e.g. dropout will not function
             Encoder.eval()
             AR_model.eval()
             W.eval()
-    
+
+            # Store the features/embeddings
+            Z_feats_val = []
+            C_feats_val = []
+            val_labels = []
+
             # Make PyTorch not calculate the gradients, so everything will be much faster.
             with no_grad():
                 
                 # Loop through every batch of our validation data and perform a similar process as for the training data
-                for validation_data in validation_data_loader:
+                for validation_data in tqdm(validation_data_loader, desc=f"Epoch {epoch}/{conf.max_epochs}, validation: ", unit="batch", file=log_file):
                     loss_batch = 0.0
                     X_input, batch_labels = validation_data
                     X_input = X_input.to(device)
@@ -274,18 +323,35 @@ if __name__ == '__main__':
                     for t in timesteps:
                         Z_future_timesteps = Z[:,(t + 1):(t + max_future_timestep + 1),:].permute(1, 0, 2)
                         c_t = C[:, t, :]
-                        predicted_future_Z = W(c_t)
-                        # if batch_labels != []:
-                        #     loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
-                        # else:
+                        if conf.w_use_ldm_params:
+                            # Get the k-step ahead weights calculated based on LDM parameters; W_k = C.A^K
+                            weight_matrices = AR_model.get_postnet_weight_matrices(conf.future_predicted_timesteps)
+                            # W.set_weights(weight_matrices)
+                            predicted_future_Z = W(c_t, weight_matrices)
+                        else:
+                            predicted_future_Z = W(c_t)
+                        # predicted_future_Z = W(c_t)
                         loss = loss_function(Z_future_timesteps, predicted_future_Z)
                         loss_batch += loss
                     epoch_loss_validation.append(loss_batch.item())
-    
+                    
+                    # Save the features
+                    Z_feats_val.append(Z.mean(axis=2))  #[batch_size, num_features, num_frames_encoding]
+                    C_feats_val.append(C.mean(axis=1))  #[batch_size, num_frames_encoding, num_features]
+                    val_labels.append(batch_labels)    
+            
+            log_file.close()
+                
+            Z_feats_val = torch.cat(Z_feats_val).cpu().numpy()
+            C_feats_val = torch.cat(C_feats_val).cpu().numpy()
+            val_labels = torch.cat(val_labels).cpu().numpy()
+
             # Calculate mean losses
             epoch_loss_training = np.array(epoch_loss_training).mean()
             epoch_loss_validation = np.array(epoch_loss_validation).mean()
-    
+            metrics['epoch_loss_training'].append(epoch_loss_training)
+            metrics['epoch_loss_validation'].append(epoch_loss_validation)
+
             # Check early stopping conditions
             if epoch_loss_validation < lowest_validation_loss:
                 lowest_validation_loss = epoch_loss_validation
@@ -301,6 +367,17 @@ if __name__ == '__main__':
             else:
                 patience_counter += 1
             
+            # Monitor classification accuracy on validation set
+            # Classify speakers
+            clf = LogisticRegression(penalty='l2')
+            clf.fit(C_feats_training, train_labels)
+            train_labels_predicted = clf.predict(C_feats_training)
+            val_labels_predicted = clf.predict(C_feats_val)
+            train_acc = accuracy_score(train_labels, train_labels_predicted)
+            val_acc = accuracy_score(val_labels, val_labels_predicted)
+            metrics['epoch_acc_training'].append(train_acc)
+            metrics['epoch_acc_validation'].append(val_acc)
+
             end_time = time.time()
             epoch_time = end_time - start_time
             
@@ -308,6 +385,7 @@ if __name__ == '__main__':
                 f.write(f'Epoch: {epoch:04d} | '
                   f'Mean training loss: {epoch_loss_training:7.4f} | '
                   f'Mean validation loss: {epoch_loss_validation:7.4f} (lowest: {lowest_validation_loss:7.4f}) | '
+                  f'training acc: {100*train_acc:3.4f}% | validation acc : {100*val_acc:3.4f}% | '
                   f'Duration: {epoch_time:7.4f} seconds\n')
                 
             # We check that do we need to update the learning rate based on the validation loss
@@ -342,30 +420,45 @@ if __name__ == '__main__':
             with open(conf.name_of_log_textfile, 'a') as f:
                 f.write(f'\nBest epoch {best_validation_epoch} with validation loss {lowest_validation_loss}\n\n')
         
-        
-        
+    # Plot the metrics
+    plt.figure(figsize=(12, 6))
+
+    # Loss plot
+    plt.subplot(1, 2, 1)  # 1 row, 2 columns, first subplot
+    plt.plot(metrics['epoch_loss_training'], label='Training Loss', color='blue')
+    plt.plot(metrics['epoch_loss_validation'], label='Validation Loss', color='orange')
+    plt.xlabel('Epochs'); plt.ylabel('Loss'); plt.title('Loss vs Epochs'); plt.legend()
+
+    # Accuracy plot
+    plt.subplot(1, 2, 2)  # 1 row, 2 columns, second subplot
+    plt.plot(metrics['epoch_acc_training'], label='Training Accuracy', color='green')
+    plt.plot(metrics['epoch_acc_validation'], label='Validation Accuracy', color='red')
+    plt.xlabel('Epochs'); plt.ylabel('Accuracy'); plt.title('Accuracy vs Epochs'); plt.legend()
+
+    # Adjust layout and save the figure
+    plt.tight_layout()
+    plt.savefig(f"logs/epochs_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_dtch{conf.w_params['detach']}.png")
+
     # Test the model
     if conf.test_model:
         with open(conf.name_of_log_textfile, 'a') as f:
             f.write('\n\nStarting testing... => ')
             
         # Load the best version of the model
-        try:
-            Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device))
-            AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device))
-            W.load_state_dict(load(conf.w_best_model_name, map_location=device))
-            ####
-            # Encoder = CPC_encoder(**conf.encoder_params)
-            # AR_model = CPC_autoregressive_model(**conf.ar_model_params)
-            # W = CPC_postnet(**conf.w_params)
-            # Encoder = Encoder.to(device)
-            # AR_model = AR_model.to(device)
-            # W = W.to(device)
-            ####
-        except (FileNotFoundError, RuntimeError):
-            Encoder.load_state_dict(best_model_encoder)
-            AR_model.load_state_dict(best_model_ar)
-            W.load_state_dict(best_model_w)
+        if not conf.rand_init:    
+            try:
+                Encoder.load_state_dict(load(conf.encoder_best_model_name, map_location=device, weights_only=True))
+                AR_model.load_state_dict(load(conf.ar_best_model_name, map_location=device, weights_only=True))
+                W.load_state_dict(load(conf.w_best_model_name, map_location=device, weights_only=True))
+            except (FileNotFoundError, RuntimeError):
+                Encoder.load_state_dict(best_model_encoder)
+                AR_model.load_state_dict(best_model_ar)
+                W.load_state_dict(best_model_w)
+        # Randomly initialize the model components
+        else:
+            Encoder = CPC_encoder(**conf.encoder_params).to(device)
+            AR_model = CPC_autoregressive_model(**conf.ar_model_params).to(device)
+            W = CPC_postnet(**conf.w_params).to(device)
                 
         testing_loss = []
         Encoder.eval()
@@ -375,11 +468,13 @@ if __name__ == '__main__':
             if conf.rnn_models_used_in_ar_model:
                 hidden = None
             
-            # Store the embeddings for visualization
+            # Store the training embeddings
             Ztrain_embeddings = []
             Ctrain_embeddings = []
             train_labels = []
-            for train_data in train_data_loader:
+            
+            log_file = open('training_log.txt', "w")
+            for train_data in tqdm(train_data_loader, desc=f"Feature extraction - training set: ", unit="batch", file=log_file):
                 loss_batch = 0.0
                 X_input, batch_labels = train_data
                 X_input = X_input.to(device)
@@ -397,14 +492,11 @@ if __name__ == '__main__':
             Ctrain_embeddings = torch.cat(Ctrain_embeddings).cpu().numpy()
             train_labels = torch.cat(train_labels).cpu().numpy()
 
-
-            # Store the embeddings for visualization
+            # Store the test embeddings
             Ztest_embeddings = []
             Ctest_embeddings = []
             test_labels = []
-
-
-            for test_data in test_data_loader:
+            for test_data in tqdm(test_data_loader, desc=f"Feature extraction - test set: ", unit="batch", file=log_file):
                 loss_batch = 0.0
                 X_input, batch_labels = test_data
                 X_input = X_input.to(device)
@@ -431,8 +523,8 @@ if __name__ == '__main__':
 
             testing_loss = np.array(testing_loss).mean()
             with open(conf.name_of_log_textfile, 'a') as f:
-                f.write(f'Testing loss: {testing_loss:7.4f}\n')
-            
+                f.write(f'Testing loss: {testing_loss:7.4f}\n\n')
+            log_file.close()
             # Concatenate the embeddings
             Ztest_embeddings = torch.cat(Ztest_embeddings).cpu().numpy()
             Ctest_embeddings = torch.cat(Ctest_embeddings).cpu().numpy()
@@ -441,12 +533,21 @@ if __name__ == '__main__':
             # Classify speakers
             clf = LogisticRegression(penalty='l2')
             clf.fit(Ctrain_embeddings, train_labels)
-            predicted_labels = clf.predict(Ctest_embeddings)
-            test_acc = accuracy_score(test_labels, predicted_labels)
+            train_labels_predicted = clf.predict(Ctrain_embeddings)
+            test_labels_predicted = clf.predict(Ctest_embeddings)
+            train_acc = accuracy_score(train_labels, train_labels_predicted)
+            test_acc = accuracy_score(test_labels, test_labels_predicted)
             
             with open(conf.name_of_log_textfile, 'a') as f:
-                f.write(f'[seed: {conf.random_seed}] testing accuracy : {test_acc:7.4f}\n')
+                f.write(f'Speaker classification results [seed: {conf.random_seed}]\n')
+                f.write(f'train acc: {100*train_acc:3.4f}% \ntesting acc : {100*test_acc:3.4f}%\n')
+
+            print(f'Speaker classification results [seed: {conf.random_seed}]')
+            print(f'train acc: {100*train_acc:3.3f}% \ntesting acc : {100*test_acc:3.3f}% \n')
 
             # fig, ax1, ax2 = visualize_tsne(x= Ctest_embeddings, y_label=test_labels, perplexity=10, title_str=f'speaker classification: {test_acc:.4f}\n')
             # fig.savefig(f'./figs/tsne visualization - seed[{conf.random_seed}].png')
+
+            # Plot losses (training and validation)
+    
 

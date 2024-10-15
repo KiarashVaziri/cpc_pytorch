@@ -1,5 +1,10 @@
+__pycache__/
 wav_files/
 wav_files10/
 wav_files251/
 LibriSpeech/
 *.DS_Store
+*.wav
+
+# models
+*.pt
