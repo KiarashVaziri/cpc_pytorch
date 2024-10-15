@@ -56,3 +56,38 @@ def visualize_tsne(x, y_label, num_components=2, perplexity=5,
                                  s=30, palette=sns.color_palette("Set2", n_cat))
   scatter_ax.set(title=f'{title_str} PCA Components: {num_components}')
   return fig, ax, ax2
+
+
+def convert_py_conf_file_to_text(conf_file_name):
+    """
+    Read the lines of a .py configuration file into a list, skip the lines with comments in them.
+    _____________________________________________________________________________________________
+    Input parameters:
+        
+    conf_file_name: The name of the configuration file we want to read.
+    
+    _____________________________________________________________________________________________
+    """
+    
+    lines = []
+    multiline_comment = 0
+    with open(conf_file_name) as f:
+        for line in f:
+            if len(line.rstrip()) > 0:
+                if line.rstrip()[0] != '#':
+                    if not multiline_comment:
+                        if len(line.rstrip()) > 2:
+                            if line.rstrip()[0:3] == '"""' or line.rstrip()[0:3] == "'''":
+                                if line.rstrip().count('"""') == 1 or line.rstrip().count("'''") == 1:
+                                    multiline_comment = 1
+                            else:
+                                lines.append(line.rstrip())
+                        else:
+                            lines.append(line.rstrip())
+                    else:
+                        if len(line.rstrip()) > 2:
+                            if line.rstrip()[0:3] == '"""' or line.rstrip()[0:3] == "'''":
+                                if line.rstrip().count('"""') == 1 or line.rstrip().count("'''") == 1:
+                                    multiline_comment = 0
+            
+    return lines

@@ -9,6 +9,7 @@ The subparts of the CPC model (encoder, autoregressive model, postnet).
 
 import numpy as np
 import sys
+import torch
 from torch import stack
 from torch.nn import Module, Linear, ReLU, Conv1d, BatchNorm1d, Dropout, GRU, ModuleList, ELU, Identity
 from encoding_models.LDM import LDM, init_ldm_parameters
@@ -46,11 +47,11 @@ class CPC_encoder(Module):
                  conv_4_padding = 1,
                  num_norm_features_4 = 512,
                  conv_5_in_dim = 512,
-                 conv_5_out_dim = 512,
+                 conv_5_out_dim = 256,
                  conv_5_kernel_size = 4,
                  conv_5_stride = 2,
                  conv_5_padding = 1,
-                 num_norm_features_5 = 512,
+                 num_norm_features_5 = 256,
                  dropout = 0.0):
 
         super().__init__()
@@ -111,8 +112,8 @@ class CPC_encoder_mlp(Module):
                  linear_2_output_dim = 512,
                  num_norm_features_2 = 512,
                  linear_3_input_dim = 512,
-                 linear_3_output_dim = 512,
-                 num_norm_features_3 = 512,
+                 linear_3_output_dim = 256,
+                 num_norm_features_3 = 256,
                  normalization_type = 'batchnorm',
                  dropout = 0.2):
 
@@ -169,7 +170,7 @@ class CPC_autoregressive_model(Module):
     """
     
     def __init__(self, encoding_dim = 256,
-                 output_dim = 512,
+                 output_dim = 256,
                  num_layers = 1,
                  type='gru',
                  ldm_kernel_initializer = 'default',
@@ -257,10 +258,10 @@ class CPC_postnet(Module):
     
     """
     
-    def __init__(self, encoding_dim = 512, ar_model_output_dim = 256, future_predicted_timesteps = 12):
+    def __init__(self, encoding_dim = 256, ar_model_output_dim = 256, future_predicted_timesteps = 12, detach=False):
 
         super().__init__()
-        
+
         # We first determine whether our future_predicted_timesteps is a number or a list of numbers.
         if isinstance(future_predicted_timesteps, int):
             # future_predicted_timesteps is a number, so we have future_predicted_timesteps linear tranformations
@@ -273,12 +274,34 @@ class CPC_postnet(Module):
         else:
             sys.exit('Configuration setting "future_predicted_timesteps" must be either an integer or a list of integers!')
 
+        self.detach = detach
 
-    def forward(self, X):
+
+    # def forward(self, X):
         
+    #     predicted_future_Z = []
+    #     for i in range(len(self.W)):
+    #         predicted_future_Z.append(self.W[i](X))
+    #     predicted_future_Z = stack(predicted_future_Z, dim=0)
+    #     # predicted_future_Z is of size [future_predicted_timesteps, batch_size, num_features] or
+    #     # [len(future_predicted_timesteps), batch_size, num_features] where num_features is the size
+    #     # of the encoding for each timestep produced by the encoder
+    #     # --> with default values predicted_future_Z.size() = torch.Size([12, 8, 512])
+                
+    #     return predicted_future_Z
+    
+    def forward(self, X, weight_matrices=None):
         predicted_future_Z = []
         for i in range(len(self.W)):
-            predicted_future_Z.append(self.W[i](X))
+            if weight_matrices is None:
+                predicted_future_Z.append(self.W[i](X))
+            else:
+                if self.detach:
+                    W_i = weight_matrices[i].detach()
+                else:
+                    W_i = weight_matrices[i]
+                predicted_future_Z.append(torch.matmul(X, W_i.T))                # X_pred = X.W_k^T
+
         predicted_future_Z = stack(predicted_future_Z, dim=0)
         # predicted_future_Z is of size [future_predicted_timesteps, batch_size, num_features] or
         # [len(future_predicted_timesteps), batch_size, num_features] where num_features is the size

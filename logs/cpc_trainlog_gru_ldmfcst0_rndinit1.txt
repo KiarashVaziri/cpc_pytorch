@@ -1,23 +1,24 @@
 The configuration settings in the file conf_train_ldmcpc_model.py:
 
 max_epochs = 10
-patience = 100
+patience = 20
 dropout = 0.0
 batch_size = 8
 learning_rate = 2e-4
+num_speakers = 10
 num_frames_encoding = 128
-future_predicted_timesteps = 12
-train_model = 1
+future_predicted_timesteps = 4
+train_model = 0
 test_model = 1
-load_model = 1
+load_model = 0
+rand_init = 1
 save_best_model = 1
-name_of_log_textfile = 'cpc_trainlog_orig_implementation.txt'
 print_conf_contents = 1
 encoder_name = 'CPC_encoder'
 autoregressive_model_name = 'CPC_autoregressive_model'
 postnet_name = 'CPC_postnet'
 rnn_models_used_in_ar_model = 0
-dataset_name = 'CPC_raw_audio_dataset_with_labels' #*
+dataset_name = 'CPCDataset' #*
 loss_name = 'CPC_loss_no_classes'
 loss_params = {'future_predicted_timesteps': future_predicted_timesteps}
 optimization_algorithm = 'Adam'
@@ -27,24 +28,27 @@ lr_scheduler = 'ReduceLROnPlateau'
 lr_scheduler_params = {'mode': 'min',
                        'factor': 0.5,
                        'patience': 30}
-encoder_best_model_name = 'CPC_Encoder_best_model.pt'
-ar_best_model_name = 'CPC_AR_best_model.pt'
-w_best_model_name = 'W_best_model.pt'
+encoder_best_model_name = f'models/{num_speakers}/CPC_Encoder_best_model.pt'
+ar_best_model_name = f'models/{num_speakers}/CPC_AR_best_model.pt'
+w_best_model_name = f'models/{num_speakers}/W_best_model.pt'
 encoder_params = {'dropout': dropout}
-ar_model_params = {'type':'ldm'}
-w_params = {}
-random_seed = 1
-params_train_dataset = {'random_seed': random_seed}
-params_validation_dataset = {'random_seed': random_seed}
-params_test_dataset = {'random_seed': random_seed}
+ar_model_params = {'type':'gru'}
+w_params = {'future_predicted_timesteps': future_predicted_timesteps,
+            'detach':False}
+w_use_ldm_params = 0
+random_seed = 42
+params_train_dataset = {'random_seed': random_seed, 'num_speakers': num_speakers}
+params_validation_dataset = {'random_seed': random_seed, 'num_speakers': num_speakers}
+params_test_dataset = {'random_seed': random_seed, 'num_speakers': num_speakers}
 params_train = {'batch_size': batch_size,
                 'shuffle': True,
                 'drop_last': True,
-                'num_workers': 1,
+                'num_workers': 0,
                 'pin_memory': False}
 params_test = {'batch_size': batch_size,
                'shuffle': False,
                'drop_last': True}
+name_of_log_textfile = f"logs/cpc_trainlog_{ar_model_params['type']}_ldmfcst{w_use_ldm_params}_rndinit{rand_init}.txt"
 train_size = 0.8
 
 ########################################################################################
@@ -53,12 +57,6 @@ train_size = 0.8
 
 Process on cuda
 
-Loading model from file...
-Loading model CPC_Encoder_best_model.pt
-Loading model CPC_AR_best_model.pt
-Loading model W_best_model.pt
-Done!
-
 Initializing training set...
 Done!
 Initializing validation set...
@@ -66,4 +64,10 @@ Done!
 Initializing test set...
 Done!
 
-Starting training...
+
+
+Starting testing... => Testing loss: 257.8505
+
+Speaker classification results [seed: 42]
+train acc: 13.3824% 
+testing acc : 11.1607%

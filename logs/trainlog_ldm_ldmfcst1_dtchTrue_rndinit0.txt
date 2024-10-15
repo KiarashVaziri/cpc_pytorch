@@ -1,0 +1,180 @@
+The configuration settings in the file confs/conf_train_ldmcpc_model.py:
+
+max_epochs = 100
+patience = 20
+dropout = 0.0
+batch_size = 8
+learning_rate = 2e-3
+num_speakers = 10
+num_frames_encoding = 128
+future_predicted_timesteps = 4
+train_model = 1
+test_model = 1
+load_model = 0
+rand_init = 0
+save_best_model = 1
+print_conf_contents = 1
+encoder_name = 'CPC_encoder'
+autoregressive_model_name = 'CPC_autoregressive_model'
+postnet_name = 'CPC_postnet'
+rnn_models_used_in_ar_model = 0
+dataset_name = 'CPCDataset' #*
+loss_name = 'CPC_loss_no_classes'
+loss_params = {'future_predicted_timesteps': future_predicted_timesteps}
+optimization_algorithm = 'Adam'
+optimization_algorithm_params = {'lr': learning_rate}
+use_lr_scheduler = 1
+lr_scheduler = 'ReduceLROnPlateau'
+lr_scheduler_params = {'mode': 'min',
+                       'factor': 0.5,
+                       'patience': 30}
+encoder_params = {'dropout': dropout}
+ar_model_params = {'type':'ldm'}
+w_params = {'future_predicted_timesteps': future_predicted_timesteps,
+            'detach':True}
+w_use_ldm_params = 1
+encoder_best_model_name = f"models/{num_speakers}/CPC_Encoder_best_model_{ar_model_params['type']}_ldmfcst{w_use_ldm_params}.pt"
+ar_best_model_name = f"models/{num_speakers}/CPC_AR_best_model_{ar_model_params['type']}_ldmfcst{w_use_ldm_params}.pt"
+w_best_model_name = f"models/{num_speakers}/W_best_model_{ar_model_params['type']}_ldmfcst{w_use_ldm_params}.pt"
+random_seed = 22
+params_train_dataset = {'random_seed': random_seed, 'num_speakers': num_speakers}
+params_validation_dataset = {'random_seed': random_seed, 'num_speakers': num_speakers}
+params_test_dataset = {'random_seed': random_seed, 'num_speakers': num_speakers}
+params_train = {'batch_size': batch_size,
+                'shuffle': True,
+                'drop_last': True,
+                'num_workers': 0,
+                'pin_memory': False}
+params_test = {'batch_size': batch_size,
+               'shuffle': False,
+               'drop_last': True}
+name_of_log_textfile = f"logs/trainlog_{ar_model_params['type']}_ldmfcst{w_use_ldm_params}_dtch{w_params['detach']}_rndinit{rand_init}.txt"
+train_size = 0.8
+
+########################################################################################
+
+
+
+Process on cuda
+
+Number of parameters:
+Encoder #params:  4730624 (%91.1)
+AR #params:        197376 (%3.8)
+W #params:         262144 (%5.1)
+Total #params: 5190144
+
+Initializing training set...
+Done!
+Initializing validation set...
+Done!
+Initializing test set...
+Done!
+
+Starting training...
+Epoch: 0001 | Mean training loss: 1280.8306 | Mean validation loss: 1019.2430 (lowest: 1019.2430) | training acc: 32.3276% | validation acc : 34.6154% | Duration: 157.1035 seconds
+Epoch: 0002 | Mean training loss: 533.5332 | Mean validation loss: 398.2205 (lowest: 398.2205) | training acc: 33.6207% | validation acc : 26.9231% | Duration: 155.6613 seconds
+Epoch: 0003 | Mean training loss: 403.6897 | Mean validation loss: 434.1017 (lowest: 398.2205) | training acc: 33.8362% | validation acc : 43.2692% | Duration: 155.8148 seconds
+Epoch: 0004 | Mean training loss: 261.8074 | Mean validation loss: 212.8381 (lowest: 212.8381) | training acc: 36.9612% | validation acc : 24.0385% | Duration: 155.2505 seconds
+Epoch: 0005 | Mean training loss: 205.1356 | Mean validation loss: 217.3815 (lowest: 212.8381) | training acc: 44.5043% | validation acc : 43.2692% | Duration: 154.5595 seconds
+Epoch: 0006 | Mean training loss: 133.9858 | Mean validation loss: 195.6428 (lowest: 195.6428) | training acc: 52.8017% | validation acc : 55.7692% | Duration: 156.7688 seconds
+Epoch: 0007 | Mean training loss: 98.8234 | Mean validation loss: 104.1584 (lowest: 104.1584) | training acc: 53.1250% | validation acc : 52.8846% | Duration: 154.2915 seconds
+Epoch: 0008 | Mean training loss: 79.2300 | Mean validation loss: 75.5973 (lowest: 75.5973) | training acc: 54.9569% | validation acc : 64.4231% | Duration: 153.8781 seconds
+Epoch: 0009 | Mean training loss: 68.7718 | Mean validation loss: 77.9750 (lowest: 75.5973) | training acc: 59.4828% | validation acc : 57.6923% | Duration: 154.0120 seconds
+Epoch: 0010 | Mean training loss: 59.1316 | Mean validation loss: 61.0455 (lowest: 61.0455) | training acc: 60.8836% | validation acc : 63.4615% | Duration: 153.9805 seconds
+Epoch: 0011 | Mean training loss: 55.3230 | Mean validation loss: 55.8527 (lowest: 55.8527) | training acc: 63.2543% | validation acc : 66.3462% | Duration: 154.0665 seconds
+Epoch: 0012 | Mean training loss: 48.0298 | Mean validation loss: 64.6846 (lowest: 55.8527) | training acc: 68.4267% | validation acc : 65.3846% | Duration: 154.0336 seconds
+Epoch: 0013 | Mean training loss: 45.7565 | Mean validation loss: 63.1169 (lowest: 55.8527) | training acc: 69.5043% | validation acc : 51.9231% | Duration: 155.8665 seconds
+Epoch: 0014 | Mean training loss: 42.5182 | Mean validation loss: 48.5186 (lowest: 48.5186) | training acc: 72.9526% | validation acc : 78.8462% | Duration: 154.2430 seconds
+Epoch: 0015 | Mean training loss: 38.2868 | Mean validation loss: 46.7352 (lowest: 46.7352) | training acc: 76.4009% | validation acc : 71.1538% | Duration: 153.9183 seconds
+Epoch: 0016 | Mean training loss: 35.6902 | Mean validation loss: 47.6456 (lowest: 46.7352) | training acc: 78.5560% | validation acc : 58.6538% | Duration: 153.9229 seconds
+Epoch: 0017 | Mean training loss: 33.6196 | Mean validation loss: 52.8961 (lowest: 46.7352) | training acc: 79.6336% | validation acc : 42.3077% | Duration: 154.0482 seconds
+Epoch: 0018 | Mean training loss: 32.0488 | Mean validation loss: 49.4981 (lowest: 46.7352) | training acc: 81.8966% | validation acc : 51.9231% | Duration: 153.8398 seconds
+Epoch: 0019 | Mean training loss: 32.7078 | Mean validation loss: 50.1345 (lowest: 46.7352) | training acc: 79.7414% | validation acc : 74.0385% | Duration: 163.5836 seconds
+Epoch: 0020 | Mean training loss: 29.6324 | Mean validation loss: 42.5695 (lowest: 42.5695) | training acc: 81.7888% | validation acc : 75.9615% | Duration: 153.8192 seconds
+Epoch: 0021 | Mean training loss: 27.1797 | Mean validation loss: 51.4703 (lowest: 42.5695) | training acc: 82.0043% | validation acc : 47.1154% | Duration: 153.5161 seconds
+Epoch: 0022 | Mean training loss: 26.6042 | Mean validation loss: 47.7679 (lowest: 42.5695) | training acc: 84.0517% | validation acc : 53.8462% | Duration: 154.1439 seconds
+Epoch: 0023 | Mean training loss: 25.7237 | Mean validation loss: 41.8142 (lowest: 41.8142) | training acc: 83.2974% | validation acc : 52.8846% | Duration: 158.9129 seconds
+Epoch: 0024 | Mean training loss: 26.2769 | Mean validation loss: 43.1496 (lowest: 41.8142) | training acc: 84.0517% | validation acc : 58.6538% | Duration: 153.9834 seconds
+Epoch: 0025 | Mean training loss: 24.6216 | Mean validation loss: 41.4818 (lowest: 41.4818) | training acc: 85.3448% | validation acc : 77.8846% | Duration: 154.1287 seconds
+Epoch: 0026 | Mean training loss: 25.6472 | Mean validation loss: 45.7491 (lowest: 41.4818) | training acc: 85.1293% | validation acc : 43.2692% | Duration: 153.8242 seconds
+Epoch: 0027 | Mean training loss: 22.8361 | Mean validation loss: 33.4990 (lowest: 33.4990) | training acc: 85.4526% | validation acc : 83.6538% | Duration: 155.9828 seconds
+Epoch: 0028 | Mean training loss: 24.6462 | Mean validation loss: 33.4731 (lowest: 33.4731) | training acc: 82.8664% | validation acc : 79.8077% | Duration: 154.0026 seconds
+Epoch: 0029 | Mean training loss: 22.9563 | Mean validation loss: 34.8248 (lowest: 33.4731) | training acc: 86.2069% | validation acc : 76.9231% | Duration: 154.0879 seconds
+Epoch: 0030 | Mean training loss: 22.0173 | Mean validation loss: 54.7329 (lowest: 33.4731) | training acc: 84.4828% | validation acc : 50.9615% | Duration: 154.1689 seconds
+Epoch: 0031 | Mean training loss: 21.1497 | Mean validation loss: 36.6361 (lowest: 33.4731) | training acc: 85.7759% | validation acc : 73.0769% | Duration: 154.0741 seconds
+Epoch: 0032 | Mean training loss: 20.5528 | Mean validation loss: 38.2567 (lowest: 33.4731) | training acc: 85.8836% | validation acc : 63.4615% | Duration: 154.0256 seconds
+Epoch: 0033 | Mean training loss: 19.5213 | Mean validation loss: 39.1383 (lowest: 33.4731) | training acc: 86.8534% | validation acc : 73.0769% | Duration: 153.7182 seconds
+Epoch: 0034 | Mean training loss: 19.6108 | Mean validation loss: 34.6332 (lowest: 33.4731) | training acc: 87.7155% | validation acc : 66.3462% | Duration: 153.9939 seconds
+Epoch: 0035 | Mean training loss: 18.3922 | Mean validation loss: 38.8833 (lowest: 33.4731) | training acc: 89.5474% | validation acc : 55.7692% | Duration: 154.0435 seconds
+Epoch: 0036 | Mean training loss: 18.6006 | Mean validation loss: 37.5851 (lowest: 33.4731) | training acc: 87.1767% | validation acc : 63.4615% | Duration: 153.8096 seconds
+Epoch: 0037 | Mean training loss: 18.9639 | Mean validation loss: 30.4529 (lowest: 30.4529) | training acc: 87.1767% | validation acc : 67.3077% | Duration: 154.0061 seconds
+Epoch: 0038 | Mean training loss: 18.2285 | Mean validation loss: 48.5981 (lowest: 30.4529) | training acc: 88.4698% | validation acc : 50.0000% | Duration: 155.1598 seconds
+Epoch: 0039 | Mean training loss: 17.2439 | Mean validation loss: 31.5590 (lowest: 30.4529) | training acc: 88.4698% | validation acc : 87.5000% | Duration: 153.9561 seconds
+Epoch: 0040 | Mean training loss: 18.3864 | Mean validation loss: 41.0659 (lowest: 30.4529) | training acc: 89.1164% | validation acc : 55.7692% | Duration: 154.0792 seconds
+Epoch: 0041 | Mean training loss: 17.4100 | Mean validation loss: 27.9532 (lowest: 27.9532) | training acc: 87.8233% | validation acc : 86.5385% | Duration: 153.0641 seconds
+Epoch: 0042 | Mean training loss: 16.9152 | Mean validation loss: 34.9715 (lowest: 27.9532) | training acc: 89.8707% | validation acc : 76.9231% | Duration: 150.5436 seconds
+Epoch: 0043 | Mean training loss: 16.3837 | Mean validation loss: 33.5802 (lowest: 27.9532) | training acc: 89.5474% | validation acc : 72.1154% | Duration: 151.2396 seconds
+Epoch: 0044 | Mean training loss: 17.2918 | Mean validation loss: 40.8750 (lowest: 27.9532) | training acc: 88.1466% | validation acc : 67.3077% | Duration: 151.2098 seconds
+Epoch: 0045 | Mean training loss: 16.8617 | Mean validation loss: 32.1839 (lowest: 27.9532) | training acc: 88.4698% | validation acc : 54.8077% | Duration: 151.7411 seconds
+Epoch: 0046 | Mean training loss: 17.2503 | Mean validation loss: 29.7583 (lowest: 27.9532) | training acc: 88.1466% | validation acc : 80.7692% | Duration: 151.2259 seconds
+Epoch: 0047 | Mean training loss: 15.5797 | Mean validation loss: 29.4054 (lowest: 27.9532) | training acc: 89.2241% | validation acc : 79.8077% | Duration: 150.4692 seconds
+Epoch: 0048 | Mean training loss: 15.8819 | Mean validation loss: 33.8661 (lowest: 27.9532) | training acc: 90.7328% | validation acc : 76.9231% | Duration: 150.4974 seconds
+Epoch: 0049 | Mean training loss: 15.4632 | Mean validation loss: 35.0641 (lowest: 27.9532) | training acc: 91.7026% | validation acc : 63.4615% | Duration: 151.7021 seconds
+Epoch: 0050 | Mean training loss: 14.2589 | Mean validation loss: 26.7550 (lowest: 26.7550) | training acc: 90.8405% | validation acc : 80.7692% | Duration: 150.2227 seconds
+Epoch: 0051 | Mean training loss: 14.7233 | Mean validation loss: 39.7879 (lowest: 26.7550) | training acc: 89.7629% | validation acc : 57.6923% | Duration: 150.9833 seconds
+Epoch: 0052 | Mean training loss: 15.5708 | Mean validation loss: 47.2752 (lowest: 26.7550) | training acc: 90.9483% | validation acc : 52.8846% | Duration: 150.7456 seconds
+Epoch: 0053 | Mean training loss: 14.6420 | Mean validation loss: 29.6206 (lowest: 26.7550) | training acc: 88.4698% | validation acc : 75.9615% | Duration: 151.2359 seconds
+Epoch: 0054 | Mean training loss: 13.7212 | Mean validation loss: 32.5997 (lowest: 26.7550) | training acc: 90.3017% | validation acc : 53.8462% | Duration: 150.1533 seconds
+Epoch: 0055 | Mean training loss: 14.5015 | Mean validation loss: 41.1131 (lowest: 26.7550) | training acc: 90.3017% | validation acc : 55.7692% | Duration: 150.5623 seconds
+Epoch: 0056 | Mean training loss: 13.4503 | Mean validation loss: 30.1815 (lowest: 26.7550) | training acc: 90.7328% | validation acc : 80.7692% | Duration: 150.3116 seconds
+Epoch: 0057 | Mean training loss: 13.8933 | Mean validation loss: 33.1762 (lowest: 26.7550) | training acc: 90.5172% | validation acc : 75.9615% | Duration: 151.3157 seconds
+Epoch: 0058 | Mean training loss: 13.8905 | Mean validation loss: 28.0945 (lowest: 26.7550) | training acc: 89.7629% | validation acc : 60.5769% | Duration: 151.4626 seconds
+Epoch: 0059 | Mean training loss: 12.1894 | Mean validation loss: 30.7173 (lowest: 26.7550) | training acc: 91.2716% | validation acc : 59.6154% | Duration: 150.2916 seconds
+Epoch: 0060 | Mean training loss: 12.4802 | Mean validation loss: 28.4744 (lowest: 26.7550) | training acc: 90.1940% | validation acc : 47.1154% | Duration: 149.7654 seconds
+Epoch: 0061 | Mean training loss: 12.5025 | Mean validation loss: 25.7604 (lowest: 25.7604) | training acc: 89.7629% | validation acc : 86.5385% | Duration: 151.0978 seconds
+Epoch: 0062 | Mean training loss: 12.5260 | Mean validation loss: 23.2031 (lowest: 23.2031) | training acc: 91.8103% | validation acc : 78.8462% | Duration: 151.3065 seconds
+Epoch: 0063 | Mean training loss: 12.9304 | Mean validation loss: 36.5024 (lowest: 23.2031) | training acc: 90.1940% | validation acc : 36.5385% | Duration: 150.6659 seconds
+Epoch: 0064 | Mean training loss: 12.5805 | Mean validation loss: 64.1341 (lowest: 23.2031) | training acc: 90.6250% | validation acc : 50.0000% | Duration: 149.9209 seconds
+Epoch: 0065 | Mean training loss: 15.0257 | Mean validation loss: 32.9243 (lowest: 23.2031) | training acc: 88.9009% | validation acc : 67.3077% | Duration: 150.7017 seconds
+Epoch: 0066 | Mean training loss: 18.3266 | Mean validation loss: 34.0502 (lowest: 23.2031) | training acc: 88.2543% | validation acc : 60.5769% | Duration: 152.5940 seconds
+Epoch: 0067 | Mean training loss: 15.6170 | Mean validation loss: 31.6154 (lowest: 23.2031) | training acc: 87.8233% | validation acc : 72.1154% | Duration: 151.3592 seconds
+Epoch: 0068 | Mean training loss: 13.0212 | Mean validation loss: 31.7431 (lowest: 23.2031) | training acc: 91.0560% | validation acc : 76.9231% | Duration: 151.3021 seconds
+Epoch: 0069 | Mean training loss: 12.7023 | Mean validation loss: 23.6254 (lowest: 23.2031) | training acc: 89.6552% | validation acc : 76.9231% | Duration: 152.1866 seconds
+Epoch: 0070 | Mean training loss: 12.3632 | Mean validation loss: 29.7342 (lowest: 23.2031) | training acc: 91.2716% | validation acc : 80.7692% | Duration: 150.7280 seconds
+Epoch: 0071 | Mean training loss: 12.8502 | Mean validation loss: 36.5006 (lowest: 23.2031) | training acc: 90.4095% | validation acc : 69.2308% | Duration: 150.8044 seconds
+Epoch: 0072 | Mean training loss: 12.2533 | Mean validation loss: 25.8200 (lowest: 23.2031) | training acc: 89.9784% | validation acc : 83.6538% | Duration: 151.2796 seconds
+Epoch: 0073 | Mean training loss: 11.5307 | Mean validation loss: 26.1335 (lowest: 23.2031) | training acc: 89.4397% | validation acc : 75.0000% | Duration: 151.4373 seconds
+Epoch: 0074 | Mean training loss: 11.8012 | Mean validation loss: 20.4273 (lowest: 20.4273) | training acc: 90.1940% | validation acc : 81.7308% | Duration: 150.9398 seconds
+Epoch: 0075 | Mean training loss: 11.1365 | Mean validation loss: 26.2878 (lowest: 20.4273) | training acc: 90.1940% | validation acc : 47.1154% | Duration: 151.5857 seconds
+Epoch: 0076 | Mean training loss: 11.2989 | Mean validation loss: 27.7386 (lowest: 20.4273) | training acc: 90.3017% | validation acc : 74.0385% | Duration: 151.2557 seconds
+Epoch: 0077 | Mean training loss: 10.6065 | Mean validation loss: 33.3472 (lowest: 20.4273) | training acc: 90.0862% | validation acc : 65.3846% | Duration: 150.6864 seconds
+Epoch: 0078 | Mean training loss:  9.9010 | Mean validation loss: 28.6818 (lowest: 20.4273) | training acc: 90.8405% | validation acc : 65.3846% | Duration: 150.7092 seconds
+Epoch: 0079 | Mean training loss: 10.4872 | Mean validation loss: 20.9360 (lowest: 20.4273) | training acc: 89.8707% | validation acc : 79.8077% | Duration: 151.3640 seconds
+Epoch: 0080 | Mean training loss: 14.4879 | Mean validation loss: 25.9667 (lowest: 20.4273) | training acc: 89.2241% | validation acc : 83.6538% | Duration: 151.1939 seconds
+Epoch: 0081 | Mean training loss: 13.1494 | Mean validation loss: 24.8345 (lowest: 20.4273) | training acc: 89.7629% | validation acc : 81.7308% | Duration: 151.3987 seconds
+Epoch: 0082 | Mean training loss: 11.1809 | Mean validation loss: 30.8193 (lowest: 20.4273) | training acc: 90.0862% | validation acc : 75.9615% | Duration: 151.3363 seconds
+Epoch: 0083 | Mean training loss:  9.8957 | Mean validation loss: 21.4179 (lowest: 20.4273) | training acc: 89.4397% | validation acc : 81.7308% | Duration: 150.9678 seconds
+Epoch: 0084 | Mean training loss: 10.5012 | Mean validation loss: 23.6310 (lowest: 20.4273) | training acc: 91.5948% | validation acc : 64.4231% | Duration: 151.2296 seconds
+Epoch: 0085 | Mean training loss:  9.7893 | Mean validation loss: 35.6211 (lowest: 20.4273) | training acc: 91.3793% | validation acc : 62.5000% | Duration: 151.5300 seconds
+Epoch: 0086 | Mean training loss: 10.3311 | Mean validation loss: 28.5013 (lowest: 20.4273) | training acc: 90.5172% | validation acc : 48.0769% | Duration: 151.6401 seconds
+Epoch: 0087 | Mean training loss:  9.9386 | Mean validation loss: 30.1015 (lowest: 20.4273) | training acc: 90.9483% | validation acc : 81.7308% | Duration: 151.1400 seconds
+Epoch: 0088 | Mean training loss:  9.2540 | Mean validation loss: 25.1726 (lowest: 20.4273) | training acc: 91.1638% | validation acc : 57.6923% | Duration: 151.1427 seconds
+Epoch: 0089 | Mean training loss: 10.2290 | Mean validation loss: 20.5005 (lowest: 20.4273) | training acc: 90.7328% | validation acc : 72.1154% | Duration: 150.9663 seconds
+Epoch: 0090 | Mean training loss: 10.0649 | Mean validation loss: 30.6841 (lowest: 20.4273) | training acc: 88.3621% | validation acc : 69.2308% | Duration: 151.1710 seconds
+Epoch: 0091 | Mean training loss: 10.6194 | Mean validation loss: 24.0958 (lowest: 20.4273) | training acc: 90.0862% | validation acc : 58.6538% | Duration: 151.2501 seconds
+Epoch: 0092 | Mean training loss:  9.2879 | Mean validation loss: 24.6736 (lowest: 20.4273) | training acc: 90.3017% | validation acc : 58.6538% | Duration: 151.8609 seconds
+Epoch: 0093 | Mean training loss: 10.3211 | Mean validation loss: 27.1102 (lowest: 20.4273) | training acc: 87.9310% | validation acc : 78.8462% | Duration: 150.8095 seconds
+Epoch: 0094 | Mean training loss:  9.5404 | Mean validation loss: 25.7715 (lowest: 20.4273) | training acc: 89.9784% | validation acc : 72.1154% | Duration: 150.4171 seconds
+
+Exiting due to early stopping
+
+
+Best epoch 74 with validation loss 20.427294364342323
+
+
+
+Starting testing... => Testing loss: 270.9544
+
+Speaker classification results [seed: 22]
+train acc: 92.4569% 
+testing acc : 89.2857%
