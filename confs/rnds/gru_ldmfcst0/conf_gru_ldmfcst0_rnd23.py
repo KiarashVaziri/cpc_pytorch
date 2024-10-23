@@ -7,14 +7,15 @@ Speech and Cognition Research Group, https://webpages.tuni.fi/specog/index.html
 The configuration file for train_cpc_model.py using the original CPC implementation.
 
 """
+import argparse
 
 # The hyperparameters for our training and testing process
 max_epochs = 100
-patience = 20
+patience = 150
 dropout = 0.0
 batch_size = 8
 learning_rate = 2e-3
-num_speakers = 40
+num_speakers = 10
 
 # The number of frames in the encoded samples z_t
 num_frames_encoding = 128
@@ -23,7 +24,7 @@ num_frames_encoding = 128
 # giving a list of numbers will result in discrete timesteps defined by the list. Giving one number
 # inside a list (e.g. [12]) will make the model predict only one future timestep.
 # NOTE: The first future timestep is 1, not 0
-future_predicted_timesteps = 4
+future_predicted_timesteps = 8
 
 # Flags for training and testing a CPC model
 train_model = 1
@@ -67,7 +68,7 @@ optimization_algorithm = 'Adam'
 optimization_algorithm_params = {'lr': learning_rate}
 
 # A flag to determine if we want to use a learning rate scheduler
-use_lr_scheduler = 1
+use_lr_scheduler = 0
 
 # Define which learning rate scheduler we want to use from torch.optim.lr_scheduler
 lr_scheduler = 'ReduceLROnPlateau'
@@ -81,7 +82,7 @@ lr_scheduler_params = {'mode': 'min',
 # The hyperparameters for constructing the models. An empty dictionary will make the model to use
 # only default hyperparameters, i.e., the hyperparameters of the original CPC paper
 encoder_params = {'dropout': dropout}
-ar_model_params = {'type':'gru'}
+ar_model_params = {'type': 'gru'}
 w_params = {'future_predicted_timesteps': future_predicted_timesteps,
             'detach':False}
 w_use_ldm_params = 0
@@ -92,7 +93,7 @@ ar_best_model_name = f"models/{num_speakers}/CPC_AR_best_model_{ar_model_params[
 w_best_model_name = f"models/{num_speakers}/W_best_model_{ar_model_params['type']}_ldmfcst{w_use_ldm_params}.pt"
 
 # The hyperparameters for our data loaders
-random_seed = 22
+random_seed = 23
 params_train_dataset = {'random_seed': random_seed, 'num_speakers': num_speakers}
 params_validation_dataset = {'random_seed': random_seed, 'num_speakers': num_speakers}
 params_test_dataset = {'random_seed': random_seed, 'num_speakers': num_speakers}

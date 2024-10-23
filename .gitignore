@@ -6,3 +6,7 @@ LibriSpeech/
 
 # models
 *.pt
+
+*.txt
+*.png
+*.out
