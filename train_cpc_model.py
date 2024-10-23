@@ -224,7 +224,7 @@ if __name__ == '__main__':
                 hidden = None
             
             # Open the log file for writing
-            log_file = open(f"training_log_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}.txt", "w")
+            log_file = open(f"training_log_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_k{conf.random_seed}.txt", "w")
 
             # Store the features/embeddings
             Z_feats_training = []

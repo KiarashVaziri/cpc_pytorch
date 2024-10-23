@@ -24,7 +24,7 @@ num_frames_encoding = 128
 # giving a list of numbers will result in discrete timesteps defined by the list. Giving one number
 # inside a list (e.g. [12]) will make the model predict only one future timestep.
 # NOTE: The first future timestep is 1, not 0
-future_predicted_timesteps = 8
+future_predicted_timesteps = 2
 
 # Flags for training and testing a CPC model
 train_model = 1
