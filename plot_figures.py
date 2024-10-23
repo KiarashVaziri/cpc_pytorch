@@ -2,29 +2,47 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-# List of paths to your saved pickle files
-ar_type = 'ldm'
-use_ldm_params = 1
-rnd_seeds = [22, 23]
-pickle_files = [f"metrics_{ar_type}_ldmfcst{use_ldm_params}_rnd{rnd_seed}" for rnd_seed in rnd_seeds]
+# Define your variables
+ar_type = 'gru'
+use_ldm_params = 0
+k = 8
+rnd_seeds = [21, 22, 23, 24, 25]
+pickle_files = [f"metrics/metrics_{ar_type}_ldmfcst{use_ldm_params}_{8}_rnd{rnd_seed}" for rnd_seed in rnd_seeds]
 
-# Initialize a dictionary to hold summed metrics for averaging
+# Initialize list to store test_acc values and dictionary for metrics
+test_accs = []
 combined_metrics = {}
 
-# Load each pickle file and accumulate the values
+# Iterate through each pickle file to load and accumulate the values
 for file in pickle_files:
-    with open(file, 'rb') as f:
-        metrics = pickle.load(f)
-    
-    # For the first file, initialize combined_metrics with lists of zeros of the same length
-    if not combined_metrics:
-        combined_metrics = {key: np.zeros_like(value) for key, value in metrics.items()}
-    
-    # Add the values from each file
-    for key in metrics:
-        combined_metrics[key] += np.array(metrics[key])
+    try:
+        # Open and load the pickle file
+        with open(file, 'rb') as f:
+            metrics = pickle.load(f)
+        
+        # Append the test_acc from the loaded metrics dictionary
+        test_accs.append(metrics['test_acc'])  # Adjust the key based on your dictionary structure
 
-# Calculate the average for each metric
+        # For the first file, initialize combined_metrics with lists of zeros of the same length
+        if not combined_metrics:
+            combined_metrics = {key: np.zeros_like(value) for key, value in metrics.items()}
+        
+        # Add the values from each file to accumulate for averaging
+        for key in metrics:
+            combined_metrics[key] += np.array(metrics[key])
+
+    except (FileNotFoundError, KeyError) as e:
+        print(f"Error loading {file}: {e}")
+
+# Calculate and print the average test accuracy
+if test_accs:
+    avg_test_acc = np.mean(test_accs)
+    print(f"Test accs: {test_accs}")
+    print(f"Average test acc: {avg_test_acc}")
+else:
+    print("No valid test_acc found in the pickle files.")
+
+# Calculate the average for each metric over the different runs
 avg_metrics = {key: combined_metrics[key] / len(pickle_files) for key in combined_metrics}
 
 # Compute min and max values for each metric over epochs
@@ -52,5 +70,5 @@ plt.xlabel('Epochs'); plt.ylabel('Accuracy'); plt.title('Average Accuracy vs Epo
 
 # Adjust layout and save the figure
 plt.tight_layout()
-plt.savefig(f"epochs_{ar_type}_ldmfcst{use_ldm_params}.png")
+plt.savefig(f"figs/epochs_{ar_type}_ldmfcst{use_ldm_params}_k{k}.png")
 plt.show()

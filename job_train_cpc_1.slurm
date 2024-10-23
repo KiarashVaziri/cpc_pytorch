@@ -2,6 +2,7 @@
 
 #SBATCH --partition=shanechi
 #SBATCH --account=shanechi_280
+#SBATCH --job-name=gru_ldmfcst0_k8
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8

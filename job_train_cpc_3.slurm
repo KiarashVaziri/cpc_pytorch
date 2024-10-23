@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #SBATCH --partition=shanechi
+#SBATCH --gres=gpu:v100:1
 #SBATCH --account=shanechi_280
 #SBATCH --nodes=1
 #SBATCH --ntasks=2
