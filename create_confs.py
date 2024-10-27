@@ -3,9 +3,9 @@ import re
 
 # Dictionary of target words and their corresponding new values
 target_values = {
-    'future_predicted_timesteps': 8, 
-    'ar_model_params': {'type': 'ldm'},
-    'w_use_ldm_params': 1,
+    'future_predicted_timesteps': 2, 
+    'ar_model_params': {'type': 'gru'},
+    'w_use_ldm_params': 0,
     'num_speakers': 10,
     'max_epochs': 100,
 }
@@ -31,13 +31,54 @@ for idx, filename in enumerate(os.listdir(rnds_folder)):
         modified_lines = []
         for line in lines:
             modified = False
+            # Change target values based on the dictionary
             for target_word, new_value in target_values.items():
                 if line.strip().startswith(f'{target_word} ='):
-                    # Modify the line by replacing the value with the corresponding new value
                     modified_line = f"{target_word} = {new_value}\n"
                     modified_lines.append(modified_line)
                     modified = True
                     break  # Exit loop once a match is found for the current line
+            
+            # Specifically modify 'num_workers' if found
+            if "'num_workers':" in line:
+                line = line.replace("'num_workers': 0", "'num_workers': 4")
+                modified = True
+            
+            # Specifically modify 'pin_memory' if found
+            if "'pin_memory':" in line:
+                line = line.replace("'pin_memory': False", "'pin_memory': True")
+                modified = True
+
+            # Modify encoder, AR, W model paths, and log file name
+            if "encoder_best_model_name =" in line:
+                modified_line = (
+                    f"encoder_best_model_name = f\"models/{{num_speakers}}/CPC_Encoder_best_model_"
+                    f"{{ar_model_params['type']}}_ldmfcst{{w_use_ldm_params}}_k{{future_predicted_timesteps}}_rnd{rnd_value}.pt\"\n"
+                )
+                modified_lines.append(modified_line)
+                modified = True
+            elif "ar_best_model_name =" in line:
+                modified_line = (
+                    f"ar_best_model_name = f\"models/{{num_speakers}}/CPC_AR_best_model_"
+                    f"{{ar_model_params['type']}}_ldmfcst{{w_use_ldm_params}}_k{{future_predicted_timesteps}}_rnd{rnd_value}.pt\"\n"
+                )
+                modified_lines.append(modified_line)
+                modified = True
+            elif "w_best_model_name =" in line:
+                modified_line = (
+                    f"w_best_model_name = f\"models/{{num_speakers}}/W_best_model_"
+                    f"{{ar_model_params['type']}}_ldmfcst{{w_use_ldm_params}}_k{{future_predicted_timesteps}}_rnd{rnd_value}.pt\"\n"
+                )
+                modified_lines.append(modified_line)
+                modified = True
+            elif "name_of_log_textfile =" in line:
+                modified_line = (
+                    f"name_of_log_textfile = f\"logs/trainlog_{{ar_model_params['type']}}_ldmfcst"
+                    f"{{w_use_ldm_params}}_dtch{{w_params['detach']}}_k{{future_predicted_timesteps}}_rnd{rnd_value}.txt\"\n"
+                )
+                modified_lines.append(modified_line)
+                modified = True
+
             if not modified:
                 modified_lines.append(line)
         
