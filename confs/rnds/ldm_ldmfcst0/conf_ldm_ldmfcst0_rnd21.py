@@ -24,7 +24,7 @@ num_frames_encoding = 128
 # giving a list of numbers will result in discrete timesteps defined by the list. Giving one number
 # inside a list (e.g. [12]) will make the model predict only one future timestep.
 # NOTE: The first future timestep is 1, not 0
-future_predicted_timesteps = 2
+future_predicted_timesteps = 4
 
 # Flags for training and testing a CPC model
 train_model = 1
@@ -56,7 +56,8 @@ rnn_models_used_in_ar_model = 0
 dataset_name = 'CPCDataset' #*
 
 # Define our loss function that we want to use from the file cpc_loss.py
-loss_name = 'CPC_loss_no_classes'
+loss_name = 'CPC_mse_loss'
+loss_flag = 'mse' if loss_name == 'CPC_mse_loss' else 'nce'
 
 # The hyperparameters for the loss function
 loss_params = {'future_predicted_timesteps': future_predicted_timesteps}

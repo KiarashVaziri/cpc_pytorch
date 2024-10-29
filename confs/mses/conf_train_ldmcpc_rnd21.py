@@ -83,10 +83,10 @@ lr_scheduler_params = {'mode': 'min',
 # The hyperparameters for constructing the models. An empty dictionary will make the model to use
 # only default hyperparameters, i.e., the hyperparameters of the original CPC paper
 encoder_params = {'dropout': dropout}
-ar_model_params = {'type': 'ldm'}
+ar_model_params = {'type': 'gru'}
 w_params = {'future_predicted_timesteps': future_predicted_timesteps,
             'detach':False}
-w_use_ldm_params = 1
+w_use_ldm_params = 0
 
 # The names of the best models (according to validation loss) for loading/saving model weights
 encoder_best_model_name = f"models/{num_speakers}/CPC_Encoder_best_model_{ar_model_params['type']}_ldmfcst{w_use_ldm_params}.pt"
