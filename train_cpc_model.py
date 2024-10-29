@@ -223,7 +223,7 @@ if __name__ == '__main__':
                 hidden = None
             
             # Open the log file for writing
-            log_file = open(f"logs/epochlogs/epochlog_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_k{max_future_timestep}_rnd{conf.random_seed}.txt", "w")
+            log_file = open(f"logs/epochlogs/epochlog_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_k{max_future_timestep}_rnd{conf.random_seed}_{conf.loss_flag}.txt", "w")
 
             # Store the features/embeddings
             Z_feats_training = []
@@ -556,7 +556,7 @@ if __name__ == '__main__':
             # Plot losses (training and validation)
 
     # Define the file path for saving the metrics
-    metrics_file = os.path.join('metrics', f"metrics_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_{conf.future_predicted_timesteps}_rnd{conf.random_seed}")
+    metrics_file = os.path.join('metrics', f"metrics_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_{conf.future_predicted_timesteps}_rnd{conf.random_seed}_{conf.loss_flag}")
 
     # Dump the results into the metrics folder
     with open(metrics_file, 'wb') as pickle_file:

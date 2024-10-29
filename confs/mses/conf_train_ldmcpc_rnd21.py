@@ -10,7 +10,7 @@ The configuration file for train_cpc_model.py using the original CPC implementat
 import argparse
 
 # The hyperparameters for our training and testing process
-max_epochs = 150
+max_epochs = 2
 patience = 150
 dropout = 0.0
 batch_size = 8
@@ -56,7 +56,8 @@ rnn_models_used_in_ar_model = 0
 dataset_name = 'CPCDataset' #*
 
 # Define our loss function that we want to use from the file cpc_loss.py
-loss_name = 'CPC_loss_no_classes'
+loss_name = 'CPC_mse_loss' # 'CPC_loss_no_classes' | 'CPC_mse_loss'
+loss_flag = 'mse' if loss_name == 'CPC_mse_loss' else 'nce'
 
 # The hyperparameters for the loss function
 loss_params = {'future_predicted_timesteps': future_predicted_timesteps}

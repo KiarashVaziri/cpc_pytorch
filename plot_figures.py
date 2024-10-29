@@ -3,9 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Define your variables
-ar_type = 'gru'
-use_ldm_params = 0
-k = 12
+ar_type = 'ldm'
+use_ldm_params = 1
+k = 2
 rnd_seeds = [21, 22, 23, 24, 25]
 pickle_files = [f"metrics/metrics_{ar_type}_ldmfcst{use_ldm_params}_{k}_rnd{rnd_seed}" for rnd_seed in rnd_seeds]
 
@@ -69,6 +69,8 @@ plt.fill_between(range(len(avg_metrics['epoch_acc_validation'])), min_metrics['e
 plt.xlabel('Epochs'); plt.ylabel('Accuracy'); plt.title(f'avg test acc: %{100*avg_test_acc:3.3f}'); plt.legend()
 
 # Adjust layout and save the figure
+file_name = f"figs/epochs_{ar_type}_ldmfcst{use_ldm_params}_k{k}.png"
 plt.tight_layout()
-plt.savefig(f"figs/epochs_{ar_type}_ldmfcst{use_ldm_params}_k{k}.png")
+plt.savefig(file_name)
 plt.show()
+print(f"Saved figure as {file_name}")
