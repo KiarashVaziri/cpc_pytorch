@@ -24,17 +24,17 @@ num_frames_encoding = 128
 # giving a list of numbers will result in discrete timesteps defined by the list. Giving one number
 # inside a list (e.g. [12]) will make the model predict only one future timestep.
 # NOTE: The first future timestep is 1, not 0
-future_predicted_timesteps = 4
+future_predicted_timesteps = 8
 
 # Flags for training and testing a CPC model
-train_model = 1
+train_model = 0
 test_model = 1
 
 # Flag for loading the weights for our model, i.e. flag for continuing a previous training process
 load_model = 0
 
 # Randomly initialize the model component for test 
-rand_init = 0
+rand_init = 1
 
 # Flag for saving the best model (according to validation loss) after each training epoch where the
 # validation loss is lower than before

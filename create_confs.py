@@ -3,12 +3,12 @@ import re
 
 # Dictionary of target words and their corresponding new values
 target_values = {
-    'future_predicted_timesteps': 4, 
+    'future_predicted_timesteps': 2, 
     'ar_model_params': {'type': 'ldm'},
-    'w_use_ldm_params': 0,
+    'w_use_ldm_params': 1,
     'num_speakers': 10,
     'max_epochs': 100,
-    'loss_name' : "'CPC_mse_loss'\nloss_flag = 'mse' if loss_name == 'CPC_mse_loss' else 'nce'",
+    # 'loss_name' : "'CPC_mse_loss'\n,
 }
 
 # Path to the 'rnds' folder

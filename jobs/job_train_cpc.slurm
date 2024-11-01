@@ -2,10 +2,10 @@
 
 #SBATCH --partition=shanechi
 #SBATCH --account=shanechi_280
-#SBATCH --gres=none
+#SBATCH --gres=gpu:v100:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32GB
-#SBATCH --time=1:00:00
+#SBATCH --time=48:00:00
 
 module purge
 module load gcc/8.3.0
@@ -19,5 +19,5 @@ mamba activate ssl_py39
 echo "Conda Environment: $CONDA_DEFAULT_ENV"
 echo Loaded all modules successfully. Running the program...
 
-python3 cpc_test_bench.py confs/rnds/ldm_ldmfcst0
+python3 cpc_test_bench.py confs/rnds/ldm_ldmfcst1/
 # python3 train_cpc_model.py confs/conf_train_ldmcpc_rnd21.py

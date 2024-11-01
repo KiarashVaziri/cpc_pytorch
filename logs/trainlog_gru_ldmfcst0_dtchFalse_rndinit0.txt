@@ -1,14 +1,14 @@
-The configuration settings in the file confs/mses/conf_train_ldmcpc_rnd21.py:
+The configuration settings in the file confs/conf_train_ldmcpc_rnd21.py:
 
 import argparse
-max_epochs = 2
+max_epochs = 1
 patience = 150
 dropout = 0.0
 batch_size = 8
 learning_rate = 2e-3
 num_speakers = 10
 num_frames_encoding = 128
-future_predicted_timesteps = 4
+future_predicted_timesteps = 3
 train_model = 1
 test_model = 1
 load_model = 0
@@ -60,10 +60,10 @@ train_size = 0.8
 Process on cpu
 
 Number of parameters:
-Encoder #params:  4730624 (%87.8)
-AR #params:        394752 (%7.3)
-W #params:         262144 (%4.9)
-Total #params: 5387520
+Encoder #params:  4730624 (%88.9)
+AR #params:        394752 (%7.4)
+W #params:         196608 (%3.7)
+Total #params: 5321984
 
 Initializing training set...
 Done!
@@ -73,18 +73,17 @@ Initializing test set...
 Done!
 
 Starting training...
-Epoch: 0001 | Mean training loss: 21.8161 | Mean validation loss: 10.5816 (lowest: 10.5816) | training acc: 35.7456% | validation acc : 23.9583% | Duration: 169.9074 seconds
-Epoch: 0002 | Mean training loss:  6.9341 | Mean validation loss:  4.6923 (lowest:  4.6923) | training acc: 32.3465% | validation acc : 17.7083% | Duration: 145.7657 seconds
+Epoch: 0001 | Mean training loss: 14.6498 | Mean validation loss:  4.7942 (lowest:  4.7942) | training acc: 33.0044% | validation acc : 29.1667% | Duration: 389.4881 seconds
 
 Max number of epochs reached, stopping training
 
 
-Best epoch 2 with validation loss 4.692341128985087
+Best epoch 1 with validation loss 4.794203460216522
 
 
 
-Starting testing... => Testing loss:  4.2606
+Starting testing... => Testing loss:  4.1203
 
 Speaker classification results [seed: 21]
-train acc: 34.3202% 
-testing acc : 33.9286%
+train acc: 35.3070% 
+testing acc : 26.7857%

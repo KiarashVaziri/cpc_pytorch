@@ -10,7 +10,7 @@ The configuration file for train_cpc_model.py using the original CPC implementat
 import argparse
 
 # The hyperparameters for our training and testing process
-max_epochs = 2
+max_epochs = 1
 patience = 150
 dropout = 0.0
 batch_size = 8
@@ -24,7 +24,7 @@ num_frames_encoding = 128
 # giving a list of numbers will result in discrete timesteps defined by the list. Giving one number
 # inside a list (e.g. [12]) will make the model predict only one future timestep.
 # NOTE: The first future timestep is 1, not 0
-future_predicted_timesteps = 4
+future_predicted_timesteps = 3
 
 # Flags for training and testing a CPC model
 train_model = 1
