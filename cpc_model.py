@@ -296,11 +296,11 @@ class CPC_postnet(Module):
             if weight_matrices is None:
                 predicted_future_Z.append(self.W[i](X))
             else:
-                if self.detach:
-                    W_i = weight_matrices[i].detach()
-                else:
-                    W_i = weight_matrices[i]
-                predicted_future_Z.append(torch.matmul(X, W_i.T))                # X_pred = X.W_k^T
+                # if self.detach:
+                #     W_i = weight_matrices[i].detach()
+                # else:
+                W_i = weight_matrices[i]
+                predicted_future_Z.append(torch.matmul(X, W_i.T))   # X_pred = X.W_k^T
 
         predicted_future_Z = stack(predicted_future_Z, dim=0)
         # predicted_future_Z is of size [future_predicted_timesteps, batch_size, num_features] or

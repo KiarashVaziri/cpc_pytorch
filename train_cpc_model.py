@@ -276,7 +276,10 @@ if __name__ == '__main__':
                         # if batch_labels != []:
                         #     loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
                         # else:
-                        loss = loss_function(Z_future_timesteps, predicted_future_Z)
+                        if conf.w_params['detach']:
+                            loss = loss_function(Z_future_timesteps.detach(), predicted_future_Z)
+                        else:
+                            loss = loss_function(Z_future_timesteps, predicted_future_Z)
                         
                         # Add the loss to the total loss of the batch
                         loss_batch += loss

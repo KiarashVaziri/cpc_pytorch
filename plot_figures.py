@@ -3,11 +3,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Define your variables
-ar_type = 'ldm'
-use_ldm_params = 1
-k = 4
+ar_type = 'gru'
+use_ldm_params = 0
+k = 3
 loss_flag = 'mse'
-rnd_seeds = [21, 22, 23, 24, 25]
+rnd_seeds = [21]
 pickle_files = [f"metrics/metrics_{ar_type}_ldmfcst{use_ldm_params}_{k}_rnd{rnd_seed}_mse" for rnd_seed in rnd_seeds]
 
 # Initialize list to store test_acc values and dictionary for metrics

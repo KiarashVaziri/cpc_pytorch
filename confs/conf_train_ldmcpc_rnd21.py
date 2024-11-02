@@ -10,7 +10,7 @@ The configuration file for train_cpc_model.py using the original CPC implementat
 import argparse
 
 # The hyperparameters for our training and testing process
-max_epochs = 1
+max_epochs = 100
 patience = 150
 dropout = 0.0
 batch_size = 8
@@ -85,7 +85,7 @@ lr_scheduler_params = {'mode': 'min',
 encoder_params = {'dropout': dropout}
 ar_model_params = {'type': 'gru'}
 w_params = {'future_predicted_timesteps': future_predicted_timesteps,
-            'detach':False}
+            'detach':True}
 w_use_ldm_params = 0
 
 # The names of the best models (according to validation loss) for loading/saving model weights
