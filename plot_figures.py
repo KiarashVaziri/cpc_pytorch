@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 # Define your variables
 ar_type = 'gru'
 use_ldm_params = 0
-k = 3
+k = 4
 loss_flag = 'mse'
-rnd_seeds = [21]
-pickle_files = [f"metrics/metrics_{ar_type}_ldmfcst{use_ldm_params}_{k}_rnd{rnd_seed}_mse" for rnd_seed in rnd_seeds]
+rnd_seeds = [22, 23, 24, 25]
+pickle_files = [f"metrics/metrics_{ar_type}_ldmfcst{use_ldm_params}_{k}_rnd{rnd_seed}_mse_dtchTrue" for rnd_seed in rnd_seeds]
 
 # Initialize list to store test_acc values and dictionary for metrics
 test_accs = []
@@ -70,7 +70,7 @@ plt.fill_between(range(len(avg_metrics['epoch_acc_validation'])), min_metrics['e
 plt.xlabel('Epochs'); plt.ylabel('Accuracy'); plt.title(f'avg test acc: %{100*avg_test_acc:3.3f}'); plt.legend()
 
 # Adjust layout and save the figure
-file_name = f"figs/epochs_{ar_type}_ldmfcst{use_ldm_params}_k{k}_{loss_flag}.png"
+file_name = f"figs/epochs_{ar_type}_ldmfcst{use_ldm_params}_k{k}_{loss_flag}_dtchTrue.png"
 plt.tight_layout()
 plt.savefig(file_name)
 plt.show()

@@ -3,7 +3,7 @@ import re
 
 # Dictionary of target words and their corresponding new values
 target_values = {
-    'future_predicted_timesteps': 2, 
+    'future_predicted_timesteps': 4, 
     'ar_model_params': {'type': 'ldm'},
     'w_use_ldm_params': 1,
     'num_speakers': 10,

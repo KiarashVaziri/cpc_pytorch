@@ -279,7 +279,7 @@ if __name__ == '__main__':
                         if conf.w_params['detach']:
                             loss = loss_function(Z_future_timesteps.detach(), predicted_future_Z)
                         else:
-                            loss = loss_function(Z_future_timesteps, predicted_future_Z)
+                            loss = loss_function(Z_future_timesteps.detach(), predicted_future_Z)
                         
                         # Add the loss to the total loss of the batch
                         loss_batch += loss
@@ -559,7 +559,7 @@ if __name__ == '__main__':
             # Plot losses (training and validation)
 
     # Define the file path for saving the metrics
-    metrics_file = os.path.join('metrics', f"metrics_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_{conf.future_predicted_timesteps}_rnd{conf.random_seed}_{conf.loss_flag}")
+    metrics_file = os.path.join('metrics', f"metrics_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_{conf.future_predicted_timesteps}_rnd{conf.random_seed}_{conf.loss_flag}_dtch{conf.w_params['detach']}_lnrw")
 
     # Dump the results into the metrics folder
     with open(metrics_file, 'wb') as pickle_file:

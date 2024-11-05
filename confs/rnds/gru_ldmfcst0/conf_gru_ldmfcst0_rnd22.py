@@ -24,7 +24,7 @@ num_frames_encoding = 128
 # giving a list of numbers will result in discrete timesteps defined by the list. Giving one number
 # inside a list (e.g. [12]) will make the model predict only one future timestep.
 # NOTE: The first future timestep is 1, not 0
-future_predicted_timesteps = 8
+future_predicted_timesteps = 4
 
 # Flags for training and testing a CPC model
 train_model = 1
@@ -85,7 +85,7 @@ lr_scheduler_params = {'mode': 'min',
 encoder_params = {'dropout': dropout}
 ar_model_params = {'type': 'gru'}
 w_params = {'future_predicted_timesteps': future_predicted_timesteps,
-            'detach':False}
+            'detach':True}
 w_use_ldm_params = 0
 
 # The names of the best models (according to validation loss) for loading/saving model weights

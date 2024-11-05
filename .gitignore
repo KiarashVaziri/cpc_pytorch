@@ -8,5 +8,4 @@ LibriSpeech/
 *.pt
 
 *.txt
-*.png
 *.out

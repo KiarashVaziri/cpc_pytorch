@@ -11,7 +11,7 @@ import numpy as np
 import sys
 import torch
 from torch import stack
-from torch.nn import Module, Linear, ReLU, Conv1d, BatchNorm1d, Dropout, GRU, ModuleList, ELU, Identity
+from torch.nn import Module, Linear, ReLU, Conv1d, BatchNorm1d, Dropout, GRU, ModuleList, ELU, Identity, Sequential
 from encoding_models.LDM import LDM, init_ldm_parameters
 
 
@@ -250,62 +250,54 @@ class CPC_autoregressive_model(Module):
             weight_matrices = [self.get_k_step_postnet(k) for k in future_predicted_timesteps]
         return weight_matrices
 
-
 class CPC_postnet(Module):
     """
-    The CPC post-net (a linear transformation) from the original CPC paper. Alternatively, as
-    mentioned by the authors, non-linear networks or recurrent neural networks could be used.
-    
+    The CPC post-net (a linear transformation or 1-layer MLP) from the original CPC paper.
+    Alternatively, as mentioned by the authors, non-linear networks or recurrent neural networks could be used.
     """
     
-    def __init__(self, encoding_dim = 256, ar_model_output_dim = 256, future_predicted_timesteps = 12, detach=False):
-
+    def __init__(self, encoding_dim=256, ar_model_output_dim=256, future_predicted_timesteps=12, 
+                 detach=False, use_mlp=False):
         super().__init__()
+
+        self.use_mlp = use_mlp
+        self.detach = detach
 
         # We first determine whether our future_predicted_timesteps is a number or a list of numbers.
         if isinstance(future_predicted_timesteps, int):
-            # future_predicted_timesteps is a number, so we have future_predicted_timesteps linear tranformations
-            self.W = ModuleList([Linear(in_features=ar_model_output_dim, out_features=encoding_dim, bias=False) for i in np.arange(future_predicted_timesteps)])
-            
+            future_steps = np.arange(future_predicted_timesteps)
         elif isinstance(future_predicted_timesteps, list):
-            # future_predicted_timesteps is a list of numbers, so we have len(future_predicted_timesteps) linear transformations
-            self.W = ModuleList([Linear(in_features=ar_model_output_dim, out_features=encoding_dim, bias=False) for i in range(len(future_predicted_timesteps))])
-            
+            future_steps = range(len(future_predicted_timesteps))
         else:
             sys.exit('Configuration setting "future_predicted_timesteps" must be either an integer or a list of integers!')
 
-        self.detach = detach
+        # Create either a linear transformation or a 1-layer MLP for each timestep
+        self.W = ModuleList()
+        for _ in future_steps:
+            if self.use_mlp:
+                # 1-layer MLP: Linear -> ReLU -> Linear
+                layer = Sequential(
+                    Linear(in_features=ar_model_output_dim, out_features=ar_model_output_dim, bias=False),
+                    ReLU(),
+                    Linear(in_features=ar_model_output_dim, out_features=encoding_dim, bias=False)
+                )
+            else:
+                # Linear layer
+                layer = Linear(in_features=ar_model_output_dim, out_features=encoding_dim, bias=False)
+            
+            self.W.append(layer)
 
-
-    # def forward(self, X):
-        
-    #     predicted_future_Z = []
-    #     for i in range(len(self.W)):
-    #         predicted_future_Z.append(self.W[i](X))
-    #     predicted_future_Z = stack(predicted_future_Z, dim=0)
-    #     # predicted_future_Z is of size [future_predicted_timesteps, batch_size, num_features] or
-    #     # [len(future_predicted_timesteps), batch_size, num_features] where num_features is the size
-    #     # of the encoding for each timestep produced by the encoder
-    #     # --> with default values predicted_future_Z.size() = torch.Size([12, 8, 512])
-                
-    #     return predicted_future_Z
-    
     def forward(self, X, weight_matrices=None):
         predicted_future_Z = []
         for i in range(len(self.W)):
             if weight_matrices is None:
                 predicted_future_Z.append(self.W[i](X))
             else:
-                # if self.detach:
-                #     W_i = weight_matrices[i].detach()
-                # else:
-                W_i = weight_matrices[i]
-                predicted_future_Z.append(torch.matmul(X, W_i.T))   # X_pred = X.W_k^T
+                # Use custom weight matrices if provided
+                W_i = weight_matrices[i] #if not self.detach else weight_matrices[i].detach()
+                predicted_future_Z.append(torch.matmul(X, W_i.T))  # X_pred = X.W_k^T
 
         predicted_future_Z = stack(predicted_future_Z, dim=0)
-        # predicted_future_Z is of size [future_predicted_timesteps, batch_size, num_features] or
-        # [len(future_predicted_timesteps), batch_size, num_features] where num_features is the size
-        # of the encoding for each timestep produced by the encoder
-        # --> with default values predicted_future_Z.size() = torch.Size([12, 8, 512])
+        # predicted_future_Z is of size [future_predicted_timesteps, batch_size, num_features]
                 
         return predicted_future_Z
