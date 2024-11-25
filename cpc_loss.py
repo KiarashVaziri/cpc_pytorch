@@ -11,7 +11,7 @@ import sys
 import numpy as np
 from torch import matmul, diag
 from torch.nn import Module, LogSoftmax
-
+import torch.nn.functional as F
 
 
 class CPC_loss_no_classes(Module):
@@ -135,3 +135,62 @@ class CPC_loss(Module):
         
         return loss
 
+
+
+
+class CPC_mse_loss(Module):
+    """
+    The CPC mse loss.
+    
+    _____________________________________________________________________________________________
+    Input parameters:
+    
+    future_predicted_timesteps: The future predicted timesteps (integer or a list of integers)
+        
+    Z_future_timesteps: The encodings of the future timesteps, i.e. z_{t+k} where k in
+                        [1, 2, ..., num_future_predicted_timesteps].
+    
+    predicted_future_Z: The predicted future embeddings z_{t+k} where k in
+                        [1, 2, ..., num_future_predicted_timesteps]
+    
+    _____________________________________________________________________________________________
+    
+    """
+    
+    def __init__(self, future_predicted_timesteps=12):
+        super().__init__()
+        
+        # We first determine whether our future_predicted_timesteps is a number or a list of numbers.
+        if isinstance(future_predicted_timesteps, int):
+            # future_predicted_timesteps is a number, so we have future_predicted_timesteps loss calculations
+            self.future_predicted_timesteps = np.arange(1, future_predicted_timesteps + 1)
+            
+        elif isinstance(future_predicted_timesteps, list):
+            # future_predicted_timesteps is a list of numbers, so we have len(future_predicted_timesteps) loss calculations
+            self.future_predicted_timesteps = future_predicted_timesteps
+            
+        else:
+            sys.exit('Configuration setting "future_predicted_timesteps" must be either an integer or a list of integers!')
+
+    import torch.nn.functional as F
+
+    def forward(self, Z_future_timesteps, predicted_future_Z):
+        loss = 0
+        num_future_predicted_timesteps = len(self.future_predicted_timesteps)
+        batch_size = Z_future_timesteps.size()[1]
+        
+        # Iterate through each future timestep and compute the MSE loss
+        i = 0
+        for k in self.future_predicted_timesteps:
+            # Compute MSE loss between the true future timestep (Z_future_timesteps[k-1])
+            # and the predicted future timestep (predicted_future_Z[i])
+            mse_loss = F.mse_loss(predicted_future_Z[i], Z_future_timesteps[k-1])
+            loss += mse_loss
+            i += 1
+            
+        # Normalize the loss by dividing by the total number of future timesteps
+        loss = loss / num_future_predicted_timesteps
+        
+        return loss
+
+    

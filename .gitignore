@@ -8,3 +8,9 @@ LibriSpeech/
 
 # models
 *.pt
+<<<<<<< HEAD
+=======
+
+*.txt
+*.out
+>>>>>>> 8f1860ffee88ad02e0cf702ac5feb8fa074a8145

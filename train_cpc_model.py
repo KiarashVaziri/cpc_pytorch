@@ -11,7 +11,7 @@ import numpy as np
 import time
 import sys
 import os
-
+import pickle
 from importlib.machinery import SourceFileLoader
 from copy import deepcopy
 from torch import cuda, no_grad, save, load
@@ -62,7 +62,6 @@ if conf.use_lr_scheduler:
     scheduler = getattr(__import__('torch.optim.lr_scheduler', fromlist=[conf.lr_scheduler]), conf.lr_scheduler)
 
 
-
 if __name__ == '__main__':
 
     # Open the file for writing
@@ -104,6 +103,11 @@ if __name__ == '__main__':
         f.write(f"AR #params:       {ar_num_params:7d} (%{100*ar_num_params/total_num_params:3.1f})\n")
         f.write(f"W #params:        {w_num_params:7d} (%{100*w_num_params/total_num_params:3.1f})\n")
         f.write(f"Total #params: {total_num_params:7d}\n\n")
+    # for name, p in AR_model.named_parameters():
+    #         print(f"parameter name: {name}")
+    #         print(p.shape)
+    #         print(p.requires_grad)
+    #         print('-------------\n\n')
 
     # Give the parameters of our models to an optimizer
     model_parameters = list(Encoder.parameters()) + list(AR_model.parameters()) + list(W.parameters())
@@ -219,7 +223,7 @@ if __name__ == '__main__':
                 hidden = None
             
             # Open the log file for writing
-            log_file = open('training_log.txt', "w")
+            log_file = open(f"logs/epochlogs/epochlog_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_k{max_future_timestep}_rnd{conf.random_seed}_{conf.loss_flag}.txt", "w")
 
             # Store the features/embeddings
             Z_feats_training = []
@@ -272,7 +276,10 @@ if __name__ == '__main__':
                         # if batch_labels != []:
                         #     loss = loss_function(Z_future_timesteps, predicted_future_Z, batch_labels)
                         # else:
-                        loss = loss_function(Z_future_timesteps, predicted_future_Z)
+                        if conf.w_params['detach']:
+                            loss = loss_function(Z_future_timesteps.detach(), predicted_future_Z)
+                        else:
+                            loss = loss_function(Z_future_timesteps.detach(), predicted_future_Z)
                         
                         # Add the loss to the total loss of the batch
                         loss_batch += loss
@@ -437,7 +444,7 @@ if __name__ == '__main__':
 
     # Adjust layout and save the figure
     plt.tight_layout()
-    plt.savefig(f"logs/epochs_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_dtch{conf.w_params['detach']}.png")
+    plt.savefig(f"logs/epochs_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_dtch{conf.w_params['detach']}_{conf.num_speakers}.png")
 
     # Test the model
     if conf.test_model:
@@ -536,7 +543,8 @@ if __name__ == '__main__':
             train_labels_predicted = clf.predict(Ctrain_embeddings)
             test_labels_predicted = clf.predict(Ctest_embeddings)
             train_acc = accuracy_score(train_labels, train_labels_predicted)
-            test_acc = accuracy_score(test_labels, test_labels_predicted)
+            test_acc = accuracy_score(test_labels, test_labels_predicted)    
+            metrics['test_acc'] = test_acc
             
             with open(conf.name_of_log_textfile, 'a') as f:
                 f.write(f'Speaker classification results [seed: {conf.random_seed}]\n')
@@ -549,5 +557,11 @@ if __name__ == '__main__':
             # fig.savefig(f'./figs/tsne visualization - seed[{conf.random_seed}].png')
 
             # Plot losses (training and validation)
-    
+
+    # Define the file path for saving the metrics
+    metrics_file = os.path.join('metrics', f"metrics_{conf.ar_model_params['type']}_ldmfcst{conf.w_use_ldm_params}_{conf.future_predicted_timesteps}_rnd{conf.random_seed}_{conf.loss_flag}_dtch{conf.w_params['detach']}_lnrw")
+
+    # Dump the results into the metrics folder
+    with open(metrics_file, 'wb') as pickle_file:
+        pickle.dump(metrics, pickle_file)
 
