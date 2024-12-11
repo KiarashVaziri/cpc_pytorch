@@ -18,36 +18,56 @@ def load_test_accuracy(file_path):
         metrics = pickle.load(f)
     return metrics.get('test_acc', None)
 
-k_acc = {"gru":[],
-             "ldm":[],
-             "ldmw":[]}
+# Dictionaries to store results
+k_acc = {"gru": [], "ldm": [], "ldmw": []}
+k_min_max = {"gru": {"min": [], "max": []},
+             "ldm": {"min": [], "max": []},
+             "ldmw": {"min": [], "max": []}}
 
+# Process metrics files
 for k in k_values:
-    seed_accs = {"gru":[],
-                "ldm":[],
-                "ldmw":[]}
+    seed_accs = {"gru": [], "ldm": [], "ldmw": []}
     for seed in random_seeds:
-        file_path_gru = f'metrics/metrics_gru_ldmfcst0_{k}_rnd{seed}_mse'
+        # GRU
+        file_path_gru = f'metrics/metrics_gru_ldmfcst0_{k}_rnd{seed}'
         acc = load_test_accuracy(file_path=file_path_gru)
         seed_accs['gru'].append(acc)
 
-        file_path_ldm = f'metrics/metrics_ldm_ldmfcst0_{k}_rnd{seed}_mse'
+        # LDM
+        file_path_ldm = f'metrics/metrics_ldm_ldmfcst0_{k}_rnd{seed}'
         acc = load_test_accuracy(file_path=file_path_ldm)
         seed_accs['ldm'].append(acc)
 
-        file_path_ldmw = f'metrics/metrics_ldm_ldmfcst1_{k}_rnd{seed}_mse'
+        # LDMW
+        file_path_ldmw = f'metrics/metrics_ldm_ldmfcst1_{k}_rnd{seed}'
         acc = load_test_accuracy(file_path=file_path_ldmw)
         seed_accs['ldmw'].append(acc)
 
-    k_acc['gru'].append(np.mean(seed_accs['gru']))
-    k_acc['ldm'].append(np.mean(seed_accs['ldm']))
-    k_acc['ldmw'].append(np.mean(seed_accs['ldmw']))
+    # Compute mean, min, and max for each configuration
+    for model in ['gru', 'ldm', 'ldmw']:
+        k_acc[model].append(np.mean(seed_accs[model]))
+        k_min_max[model]['min'].append(np.min(seed_accs[model]))
+        k_min_max[model]['max'].append(np.max(seed_accs[model]))
 
+# Plotting
 plt.figure(figsize=(12, 6))
 
-plt.plot(k_values, k_acc['gru'], label='gru', color='red')
-plt.plot(k_values, k_acc['ldm'], label='ldm', color='blue')
-plt.plot(k_values, k_acc['ldmw'], label='ldmw', color='green')
+# GRU
+plt.plot(k_values, k_acc['gru'], label='(i) gru', color='red')
+plt.fill_between(k_values, k_min_max['gru']['min'], k_min_max['gru']['max'], color='red', alpha=0.2)
+
+# LDM
+plt.plot(k_values, k_acc['ldm'], label='(ii) ldm + learnable w', color='blue')
+plt.fill_between(k_values, k_min_max['ldm']['min'], k_min_max['ldm']['max'], color='blue', alpha=0.2)
+
+# LDMW
+plt.plot(k_values, k_acc['ldmw'], label='(iii) ldm', color='green')
+plt.fill_between(k_values, k_min_max['ldmw']['min'], k_min_max['ldmw']['max'], color='green', alpha=0.2)
+
+# Finalize plot
 plt.legend()
-plt.xlabel('k'); plt.ylabel('test acc'); plt.title("Speaker classification test acc")
-plt.savefig('figs/acc_overk_mse.png')
+plt.xlabel('k')
+plt.ylabel('test acc')
+plt.title("Speaker classification test acc")
+plt.savefig('figs/combined_acc_with_margins.png')
+# plt.show()

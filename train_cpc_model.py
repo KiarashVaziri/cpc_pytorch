@@ -295,7 +295,7 @@ if __name__ == '__main__':
 
 
                     # Save the features
-                    Z_feats_training.append(Z.mean(axis=2))  #[batch_size, num_features, num_frames_encoding]
+                    Z_feats_training.append(Z.mean(axis=1))  #[batch_size, num_frames_encoding, num_features]
                     C_feats_training.append(C.mean(axis=1))  #[batch_size, num_frames_encoding, num_features]
                     train_labels.append(batch_labels)    
                 
@@ -343,7 +343,7 @@ if __name__ == '__main__':
                     epoch_loss_validation.append(loss_batch.item())
                     
                     # Save the features
-                    Z_feats_val.append(Z.mean(axis=2))  #[batch_size, num_features, num_frames_encoding]
+                    Z_feats_val.append(Z.mean(axis=1))  #[batch_size, num_frames_encoding, num_features]
                     C_feats_val.append(C.mean(axis=1))  #[batch_size, num_frames_encoding, num_features]
                     val_labels.append(batch_labels)    
             
